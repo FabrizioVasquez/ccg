@@ -3,7 +3,9 @@
 > **Foco:** CL_02 “Patrimonio Estable” (COP, horizonte 36m, tolerancia Media-Baja, **drawdown máx. 10%**, máx. 25% en activos de alta volatilidad).
 > **Señal:** con este universo, **ninguna cartera 100% invertida en acciones respeta de forma robusta el límite de 10% de CL_02**. La diversificación ingenua lo rompe casi al doble. La decisión de valor no es solo *qué* comprar, sino **cuánto exponer**.
 
-Reproducible con `src/analysis/etapa2_signal.py`, que usa la limpieza de `src/analysis/clean.py`. Fecha de “hoy” en los datos: **2026-08-14**.
+**Materializado en Databricks:** catálogo `credicorp_dq` (alcance temporal: **un solo dominio**). Lee de `credicorp_dq.silver.*` y escribe `credicorp_dq.gold.etapa2_*` con el notebook [`notebooks/etapa2_find_the_signal.py`](../notebooks/etapa2_find_the_signal.py). Réplica local: `src/analysis/etapa2_signal.py`. Fecha de “hoy” en los datos: **2026-08-14**.
+
+¿Nuevo en el tema? Lee primero la [guía para junior](etapa2_guia_junior.md).
 
 ---
 
@@ -11,10 +13,10 @@ Reproducible con `src/analysis/etapa2_signal.py`, que usa la limpieza de `src/an
 
 | Hallazgo | Impacto | Tratamiento |
 |---|---|---|
-| **El diario y el expanded no coinciden** en el periodo común. Parten del mismo precio el 01-ago-2025 y luego se separan (correlación de retornos ≈ 0; diferencia media de USD 7,9). | Dos versiones de la verdad | Se usa **el diario** como fuente. Reacciona en la dirección del evento en **4 de 5** eventos; el expanded, en 1 de 5. El expanded queda solo como historia previa a ago-2025. |
+| **El diario y el expanded no coinciden** en el periodo común. Parten del mismo precio el 01-ago-2025 y luego se separan (correlación de retornos ≈ 0; diferencia media de USD 7,9). | Dos versiones de la verdad | Se usa **el diario** como fuente. Reacciona en la dirección del evento en **4 de 5** eventos; el intradía, en 2 de 5 (cifra de Databricks). El expanded queda solo como historia previa a ago-2025. |
 | Alias de IDs (`VF-A1`, `VFA03`, `VF_A6`, `VF-A6`, `VF-A4`, `ISS04`) | Activos partidos en varios IDs | Se homologan al ID canónico (política g-01) |
 | 2 fechas en formato `MM/DD/YYYY` y 7 filas duplicadas | Rompen la PK (asset_id, date) | Se pasan a ISO y se deduplican (g-02, g-04) |
-| `close = 3589` (VF_A06, 2026-03-23), fuera del rango [low, high] | Un retorno falso de +10.000% | Se marca y se reemplaza por el promedio OHLC |
+| `close = 3589` (VF_A06, 2026-03-23), fuera del rango [low, high] | Un retorno falso de +10.000% | Silver lo corrige como error de escala ×100 → 35,89 |
 | `us_inflation_yoy` con 258 nulos (es un dato mensual) | Huecos en el macro | Forward-fill |
 | **`Q4-2024` de ISS_02 corresponde en realidad a 2025-06-30** (por su posición en la serie) | El mapeo del doc de arquitectura (→ 2024-12-31) duplicaba un trimestre y perdía otro | Se infiere el trimestre por secuencia. Corrige `data_mesh_architecture.md` |
 | Revenue de ISS_06 en 2025-06-30 = 1.845,7 (las demás cifras rondan 2.800); además venía como texto con coma | El margen salta de 15% a 24% | Se convierte a número y se marca como outlier (no se usa en ratios) |
@@ -100,6 +102,6 @@ Quedan **fuera** o limitados al 25% de alta volatilidad: VF_A02 (−24,5% en el 
 - Que el cliente acepte un drawdown mayor o redefina qué es “alta volatilidad”.
 
 ## 7. Siguiente paso (etapa 3 — Find the value)
-1. Materializar en Databricks, siguiendo los dominios aprobados (`market_data`, `clientele_data`, `advisory`), las tablas limpias y la señal.
+1. ~~Materializar en Databricks~~ ✅ hecho en `credicorp_dq.gold.etapa2_*`. Alcance temporal: un solo dominio (`credicorp_dq`); la separación en dominios de data mesh queda pospuesta.
 2. Optimizar los pesos del núcleo y la exposición X% en entrenamiento, y validar en prueba.
 3. Cuantificar el valor: drawdown evitado en COP frente a la cartera equiponderada, sobre un patrimonio de referencia.
