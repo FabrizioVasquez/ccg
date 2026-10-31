@@ -64,6 +64,49 @@ def viabilidad(px, ref, mac, n=60000, seed=0):
     print("\nactivos de alta volatilidad (>30%):", list(px.columns[alta]))
 
 
+def mercado_y_estres(px, mac):
+    r = px.pct_change()
+    m = mac.market_factor
+    print("\nbeta a market_factor:", {a: round(np.polyfit(*pd.concat([m, r[a]], axis=1).dropna().values.T, 1)[0], 2) for a in r})
+    c = r.corr().values[np.triu_indices(8, 1)]
+    print(f"correlaciones entre activos: {c.min():.2f} a {c.max():.2f}")
+    print("retorno diario medio % por régimen:")
+    print((r.join(mac.risk_regime).groupby("risk_regime").mean() * 100).round(2).to_string())
+
+
+def eventos(px, ref):
+    ev = v.leer("06_events.csv")
+    ev["event_date"] = pd.to_datetime(ev.event_date)
+    ref = ref.set_index("asset_id")
+    print("\nimpacto de eventos (retorno desde el cierre previo):")
+    for _, e in ev.iterrows():
+        ids = [e.scope] if e.scope.startswith("VF") else ref[ref.sector == e.scope].index.tolist()
+        for a in ids:
+            i = px.index.searchsorted(e.event_date)
+            p0 = px[a].iloc[i - 1]
+            print(f"  {e.event_date.date()} {a} {e.event_type}/{e.severity}: 5d {px[a].iloc[i + 4] / p0 - 1:.1%} | 20d {px[a].iloc[min(i + 19, len(px) - 1)] / p0 - 1:.1%}")
+
+
+def fundamentales(ref):
+    f = v.leer("03_fundamentals_raw.csv")
+    f["issuer_id"] = f.issuer_id.str.replace(r"^ISS_?0?(\d)$", r"ISS_0\1", regex=True)
+    f["period_end"] = f.period_end.replace({"Q4-2024": "2024-12-31"})
+    f["revenue_usd_m"] = pd.to_numeric(f.revenue_usd_m.astype(str).str.replace(",", ""))
+    f = f.drop_duplicates(["issuer_id", "period_end"]).sort_values(["issuer_id", "period_end"])
+    f["margen"] = f.ebitda_usd_m / f.revenue_usd_m
+    f["deuda_neta_ebitda"] = (f.debt_usd_m - f.cash_usd_m) / (f.ebitda_usd_m * 4)
+    g = f.groupby("issuer_id")
+    # comparación interanual: último trimestre contra 4 trimestres antes
+    s = pd.DataFrame({
+        "ebitda_yoy": g.ebitda_usd_m.last() / g.ebitda_usd_m.nth(-5).values - 1,
+        "utilidad_yoy": g.net_income_usd_m.last() / g.net_income_usd_m.nth(-5).values - 1,
+        "margen_ini": g.margen.first(), "margen_ult": g.margen.last(),
+        "dn_ebitda_ini": g.deuda_neta_ebitda.first(), "dn_ebitda_ult": g.deuda_neta_ebitda.last(),
+    })
+    print("\nfundamentales (ISS_06 ingresos 2025-06-30 es erróneo; ver validación):")
+    print(s.join(ref.set_index("issuer_id")[["asset_id"]]).round(3).to_string())
+
+
 def main():
     px = precios()
     ref = v.leer("04_asset_reference.csv")
@@ -73,6 +116,9 @@ def main():
     print(metricas(px).join(ref.set_index("asset_id")[["name", "sector", "country"]]).round(3).to_string())
     for c in ("usd_cop", "usd_pen"):
         print(f"variación {c}: {mac[c].iloc[-1] / mac[c].iloc[0] - 1:.2%}")
+    mercado_y_estres(px, mac)
+    eventos(px, ref)
+    fundamentales(ref)
     viabilidad(px, ref, mac)
 
 
