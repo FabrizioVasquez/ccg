@@ -8,7 +8,6 @@
 # MAGIC | `fundamentals_ratios` | emisor × trimestre | Márgenes, deuda neta, deuda neta / EBITDA LTM |
 # MAGIC | `event_impact` | evento × activo × día relativo | Retorno anormal acumulado (CAR) de −5 a +10 días |
 # MAGIC | `client_asset_fit` | cliente × activo | Drawdown y volatilidad en la moneda del cliente vs su tolerancia |
-# MAGIC | `scenario_twist_impact` | choque | Valor base (último dato) vs valor con el choque de `dataset_twist.csv` |
 # MAGIC | `dq_scorecard` | tabla | Filas bronze → silver → cuarentena y correcciones aplicadas |
 # MAGIC | `dim_*` / `fact_*` (estrella) | ver sección final | Modelo dimensional para BI (`modelo_estrella.md`) |
 # MAGIC
@@ -138,32 +137,9 @@ display(fit.groupBy("client_id", "profile_name")
 
 # COMMAND ----------
 
-# Escenario: choques de dataset_twist sobre el último dato observado (no se mezclan con la historia)
-shocks = spark.table(f"{SILVER}.scenario_twist")
-last_macro = macro.orderBy(F.desc("date")).limit(1)
-macro_base = (shocks.filter("target_table = 'macro_daily'").crossJoin(last_macro)
-              .withColumn("base_value", F.expr("""CASE target_column
-                  WHEN 'us_10y_yield' THEN us_10y_yield WHEN 'usd_cop' THEN usd_cop WHEN 'usd_pen' THEN usd_pen
-                  WHEN 'usd_mxn' THEN usd_mxn WHEN 'usd_clp' THEN usd_clp END"""))
-              .withColumn("base_date", F.col("date")))
-# liquidez de CL_02: hoy no hay % cuantificado (solo 'Media'), así que el choque fija un valor nuevo sin base
-client_base = (shocks.filter("target_table = 'client_profiles'")
-               .withColumn("base_value", F.lit(None).cast("double")).withColumn("base_date", F.lit(None).cast("date")))
-scenario = (macro_base.select(*shocks.columns, "base_date", "base_value")
-            .unionByName(client_base.select(*shocks.columns, "base_date", "base_value"))
-            .withColumn("shocked_value", F.expr("""CASE operation
-                WHEN 'add' THEN base_value + shock_value WHEN 'multiply' THEN base_value * shock_value
-                WHEN 'set' THEN shock_value END""")))
-write(scenario, f"{GOLD}.scenario_twist_impact", "Choques del escenario twist sobre el último dato observado")
-display(scenario.select("release_id", "target_table", "client_id", "target_column", "operation",
-                        "base_date", "base_value", "shock_value", "shocked_value", "horizon_months"))
-
-# COMMAND ----------
-
 pairs = [("market_prices_raw", "market_prices_daily"), ("market_prices_intraday_raw", "market_prices_intraday"),
          ("fundamentals_raw", "fundamentals"), ("macro_raw", "macro_daily"),
-         ("asset_reference", "asset_reference"), ("client_profiles", "client_profiles"), ("events", "events"),
-         ("scenario_twist", "scenario_twist")]
+         ("asset_reference", "asset_reference"), ("client_profiles", "client_profiles"), ("events", "events")]
 existing = {r.tableName for r in spark.sql(f"SHOW TABLES IN {SILVER}").collect()}
 
 def count_or_zero(table):
@@ -193,7 +169,7 @@ display(scorecard)
 # MAGIC |---|---|
 # MAGIC | `dim_fecha` | día calendario (`sk_fecha = yyyymmdd`) |
 # MAGIC | `dim_activo` | activo (emisor aplanado, 1:1) |
-# MAGIC | `dim_cliente` | cliente × versión (SCD2: el twist `TW_02` abre una versión nueva de CL_02) |
+# MAGIC | `dim_cliente` | cliente |
 # MAGIC | `dim_evento` | evento |
 # MAGIC | `dim_regimen` | régimen de mercado |
 # MAGIC | `fact_precio_diario` | activo × día |
@@ -211,7 +187,6 @@ STAR_DIMS = ["dim_fecha", "dim_activo", "dim_cliente", "dim_evento", "dim_regime
 STAR_FACTS = ["fact_precio_diario", "fact_macro_diario", "fact_fundamentales", "fact_impacto_evento",
               "fact_ajuste_cliente_activo"]
 REGIMES = [("Normal", 1), ("Recovery", 2), ("Stress", 3)]  # sk_regimen = orden de estrés
-OPEN_FROM, OPEN_TO = "1900-01-01", "9999-12-31"  # vigencia abierta en SCD2
 
 # Las FK impiden reemplazar una dimensión referenciada: se borran primero los hechos y luego las dimensiones
 for t in STAR_FACTS + STAR_DIMS:
@@ -256,22 +231,8 @@ dim_evento = events.select(sk(["event_date", "event_id"]).alias("sk_evento"), "e
                            "scope_type", "event_type", "severity", "headline")
 write(dim_evento, f"{GOLD}.dim_evento", "Eventos de mercado por activo o sector")
 
-# SCD2: cada choque de liquidez del twist cierra la versión vigente del cliente y abre una nueva
-liq = (shocks.filter("target_table = 'client_profiles' AND target_column = 'liquidity_need_pct'")
-             .select("client_id", F.col("shock_value").alias("liquidity_need_pct"),
-                     F.col("horizon_months").alias("liquidity_horizon_months"), F.col("effective_date").alias("valid_from")))
-v1 = (clients.withColumn("liquidity_need_pct", F.lit(None).cast("double"))
-          .withColumn("liquidity_horizon_months", F.lit(None).cast("int"))
-          .withColumn("valid_from", F.lit(OPEN_FROM).cast("date")))
-versions = v1.unionByName(clients.join(liq, "client_id"))
-w_ver = W.partitionBy("client_id").orderBy("valid_from")
-dim_cliente = (versions
-               .withColumn("valid_to", F.coalesce(F.date_sub(F.lead("valid_from").over(w_ver), 1), F.lit(OPEN_TO).cast("date")))
-               .withColumn("is_current", F.lead("valid_from").over(w_ver).isNull())
-               .withColumn("sk_cliente", sk(["client_id", "valid_from"])))
-dim_cliente = dim_cliente.select("sk_cliente", *[c for c in dim_cliente.columns if c != "sk_cliente"])
-write(dim_cliente, f"{GOLD}.dim_cliente", "Perfiles de cliente con historial (SCD2)")
-display(dim_cliente.select("sk_cliente", "client_id", "liquidity_need", "liquidity_need_pct", "valid_from", "valid_to", "is_current"))
+dim_cliente = clients.select(sk(["client_id"]).alias("sk_cliente"), *clients.columns)
+write(dim_cliente, f"{GOLD}.dim_cliente", "Perfiles de cliente con restricciones parseadas")
 
 # COMMAND ----------
 
@@ -279,7 +240,7 @@ display(dim_cliente.select("sk_cliente", "client_id", "liquidity_need", "liquidi
 k_activo = spark.table(f"{GOLD}.dim_activo").select("asset_id", "sk_activo")
 k_regimen = spark.table(f"{GOLD}.dim_regimen").select("risk_regime", "sk_regimen")
 k_evento = spark.table(f"{GOLD}.dim_evento").select("event_id", "sk_evento")
-k_cliente = spark.table(f"{GOLD}.dim_cliente").filter("is_current").select("client_id", "sk_cliente")
+k_cliente = spark.table(f"{GOLD}.dim_cliente").select("client_id", "sk_cliente")
 
 f_precio = (fact.join(k_activo, "asset_id", "left").join(k_regimen, "risk_regime", "left")
             .select(sk_fecha("date").alias("sk_fecha"), "sk_activo", "sk_regimen",
@@ -304,7 +265,6 @@ f_evento = (impact.join(k_evento, "event_id", "left").join(k_activo, "asset_id",
             .select("sk_evento", "sk_activo", sk_fecha("date").alias("sk_fecha"), "t", "ret_abnormal", "car"))
 write(f_evento, f"{GOLD}.fact_impacto_evento", "Hecho: retorno anormal acumulado alrededor de cada evento")
 
-# Snapshot calculado con la tolerancia vigente: se enlaza a la versión actual del cliente
 f_ajuste = (fit.join(k_cliente, "client_id", "left").join(k_activo, "asset_id", "left")
             .select("sk_cliente", "sk_activo", "max_drawdown_local", "vol_anual_local", "cumple_drawdown"))
 write(f_ajuste, f"{GOLD}.fact_ajuste_cliente_activo", "Hecho: drawdown y volatilidad por cliente y activo")

@@ -22,7 +22,6 @@ SOURCES = {
     "asset_reference":            "04_asset_reference.csv",
     "client_profiles":            "05_client_profiles.csv",
     "events":                     "06_events.csv",
-    "scenario_twist":             "dataset_twist.csv",
 }
 
 print(f"catalog={CATALOG} | landing={LANDING}")

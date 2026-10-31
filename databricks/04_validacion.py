@@ -47,7 +47,7 @@ def value(table, col, where):
 # COMMAND ----------
 
 EXPECTED_BRONZE = {"market_prices_raw": 2175, "market_prices_intraday_raw": 538836, "macro_raw": 271,
-                   "fundamentals_raw": 65, "asset_reference": 8, "client_profiles": 3, "events": 5, "scenario_twist": 3}
+                   "fundamentals_raw": 65, "asset_reference": 8, "client_profiles": 3, "events": 5}
 
 for table, fname in SOURCES.items():
     t = f"{BRONZE}.{table}"
@@ -127,7 +127,7 @@ check("silver", "caso: cash ISS_07 2025-09-30 interpolado ≈ 335.6",
 check("silver", "fundamentales: cash nulo", lambda: count(fund, "cash_usd_m IS NULL"), 0, requires=[fund])
 check("silver", "fundamentales: available_date = period_end + 45", lambda: count(fund, "datediff(available_date, period_end) != 45"), 0, requires=[fund])
 
-clients_t, twist_t = S("client_profiles"), S("scenario_twist")
+clients_t = S("client_profiles")
 check("silver", "clientes: rango ordinal Media-Baja < Media < Alta",
       lambda: [r.client_id for r in spark.table(clients_t).orderBy("risk_tolerance_rank").collect()] == ["CL_02", "CL_03", "CL_01"],
       True, requires=[clients_t])
@@ -136,8 +136,6 @@ check("silver", "clientes: restricciones parseadas (45% sector, 25% alta vol, 3 
                      for r in spark.table(clients_t).collect())
               == [("CL_01", 0.45, None, None, None), ("CL_02", None, 0.25, None, None), ("CL_03", None, None, 3, 3)],
       True, requires=[clients_t])
-check("silver", "twist: 3 choques mapeados, 0 en cuarentena",
-      lambda: (count(twist_t), count(S("scenario_twist_quarantine"))) == (3, 0), True, requires=[twist_t])
 check("silver", "dq_log tiene registros", lambda: count(S("dq_log")) > 0, True, requires=[S("dq_log")])
 
 # COMMAND ----------
@@ -162,20 +160,12 @@ check("gold", "caso: sin margen para el revenue sospechoso de ISS_06",
       lambda: count(G("fundamentals_ratios"), "suspect_revenue AND ebitda_margin IS NULL AND net_margin IS NULL"), 1, requires=[G("fundamentals_ratios")])
 check("gold", "fundamentals_ratios: ninguna variación QoQ > 30% tras excluir el sospechoso",
       lambda: count(G("fundamentals_ratios"), "abs(revenue_qoq) > 0.3"), 0, requires=[G("fundamentals_ratios")])
-sc = G("scenario_twist_impact")
-check("gold", "caso: escenario tasa 10y 4.10 → 4.75",
-      lambda: value(sc, "shocked_value", "target_column = 'us_10y_yield'"), 4.75, tol=1e-9, requires=[sc])
-check("gold", "caso: escenario USD/COP 4195.52 × 1.08",
-      lambda: value(sc, "shocked_value", "target_column = 'usd_cop'"), 4195.52 * 1.08, tol=1e-6, requires=[sc])
-check("gold", "caso: escenario CL_02 30% líquido en 6 meses",
-      lambda: spark.table(sc).filter("client_id = 'CL_02'").select("shocked_value", "horizon_months").first()[:] == (0.3, 6),
-      True, requires=[sc])
 check("gold", "event_impact: 5 eventos", lambda: spark.table(G("event_impact")).select("event_id").distinct().count(), 5, requires=[G("event_impact")])
 check("gold", "client_asset_fit: 3 clientes × 8 activos", lambda: count(G("client_asset_fit")), 24, requires=[G("client_asset_fit")])
 check("gold", "caso: CL_01 cumple con VF_A04 y VF_A05",
       lambda: sorted(r.asset_id for r in spark.table(G("client_asset_fit")).filter("client_id = 'CL_01' AND cumple_drawdown").collect()) == ["VF_A04", "VF_A05"],
       True, requires=[G("client_asset_fit")])
-check("gold", "dq_scorecard: 8 tablas", lambda: count(G("dq_scorecard")), 8, requires=[G("dq_scorecard")])
+check("gold", "dq_scorecard: 7 tablas", lambda: count(G("dq_scorecard")), 7, requires=[G("dq_scorecard")])
 
 # COMMAND ----------
 
@@ -204,13 +194,7 @@ for fact_t, fks in STAR_FKS.items():
 check("gold", "dim_activo: 8 activos", lambda: count(G("dim_activo")), 8, requires=[G("dim_activo")])
 check("gold", "dim_regimen: 3 regímenes", lambda: count(G("dim_regimen")), 3, requires=[G("dim_regimen")])
 check("gold", "dim_evento: 5 eventos", lambda: count(G("dim_evento")), 5, requires=[G("dim_evento")])
-check("gold", "dim_cliente: 3 clientes + 1 versión SCD2 de CL_02", lambda: count(G("dim_cliente")), 4, requires=[G("dim_cliente")])
-check("gold", "dim_cliente: una versión vigente por cliente",
-      lambda: count(G("dim_cliente"), "is_current"), 3, requires=[G("dim_cliente")])
-check("gold", "caso: CL_02 vigente con 30% de liquidez desde 2026-08-17",
-      lambda: spark.table(G("dim_cliente")).filter("client_id = 'CL_02' AND is_current")
-                   .select("liquidity_need_pct", F.col("valid_from").cast("string")).first()[:] == (0.3, "2026-08-17"),
-      True, requires=[G("dim_cliente")])
+check("gold", "dim_cliente: 3 clientes", lambda: count(G("dim_cliente")), 3, requires=[G("dim_cliente")])
 check("gold", "dim_fecha: sin huecos en el calendario",
       lambda: spark.table(G("dim_fecha")).agg((F.datediff(F.max("fecha"), F.min("fecha")) + 1 - F.count("*")).alias("x")).first()["x"],
       0, requires=[G("dim_fecha")])

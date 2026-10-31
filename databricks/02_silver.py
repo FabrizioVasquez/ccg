@@ -19,7 +19,6 @@
 # MAGIC | `cash_usd_m` nulo entre dos trimestres con dato | Interpolación lineal (`imputed_cash = true`) |
 # MAGIC | Estados financieros se publican después del cierre | `available_date = period_end + 45 días` |
 # MAGIC | Perfiles: tolerancia ordinal y restricciones en texto libre | `risk_tolerance_rank` y límites numéricos parseados |
-# MAGIC | `dataset_twist.csv`: `field` no coincide con columnas | Mapeo explícito a tabla/columna/operación; lo no mapeable → cuarentena |
 # MAGIC
 # MAGIC Cada fila guarda en `_dq_fixes` qué correcciones recibió. Lo que no se puede corregir va a tablas `*_quarantine`,
 # MAGIC y los conteos por regla se acumulan en `silver.dq_log`.
@@ -305,52 +304,6 @@ write(f.filter("period_end IS NULL").select(*fund_cols), f"{SILVER}.fundamentals
 write(f.filter("period_end IS NOT NULL").select(*fund_cols), f"{SILVER}.fundamentals")
 dq_log.append(("fundamentals_raw", "Nulos en cash_usd_m sin vecinos para interpolar",
                spark.table(f"{SILVER}.fundamentals").filter("cash_usd_m IS NULL").count()))
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Escenario (`dataset_twist.csv`)
-# MAGIC Cada novedad se traduce a un choque sobre una columna real. **No** se inserta como historia: gold lo aplica sobre el
-# MAGIC último dato observado. `field` no coincide con los nombres de columna (`USD_COP` vs `usd_cop`, `CL_02_liquidity`),
-# MAGIC así que el mapeo es explícito; lo que no se reconoce va a cuarentena.
-
-# COMMAND ----------
-
-import re
-
-def parse_shock(field, text):
-    """-> (target_table, client_id, target_column, operation, shock_value, horizon_months) o None si no se reconoce."""
-    pct = re.search(r"(\d+(?:\.\d+)?)\s*%", text)
-    bps = re.search(r"(\d+(?:\.\d+)?)\s*pb", text)
-    months = re.search(r"(\d+)\s*meses", text)
-    client = re.match(r"^(CL_\d{2})_(\w+)$", field)
-    if field.lower() in MACRO_NUM and bps:
-        sign = -1 if re.search(r"(?i)\b(baja|cae)\b", text) else 1
-        return ("macro_daily", None, field.lower(), "add", sign * float(bps.group(1)) / 100, None)  # pb -> puntos %
-    if field.lower() in MACRO_NUM and pct:
-        # USD/XXX: la moneda local se deprecia -> el par sube
-        sign = -1 if re.search(r"(?i)\b(aprecia|baja|cae)", text) else 1  # \b: 'deprecia' no debe calzar con 'aprecia'
-        return ("macro_daily", None, field.lower(), "multiply", 1 + sign * float(pct.group(1)) / 100, None)
-    if client and client.group(2) == "liquidity" and pct:
-        return ("client_profiles", client.group(1), "liquidity_need_pct", "set", float(pct.group(1)) / 100,
-                int(months.group(1)) if months else None)
-    return None
-
-twist_rows = []
-for r in spark.table(f"{BRONZE}.scenario_twist").collect():
-    shock = parse_shock(r["field"], r["new_information"])
-    twist_rows.append((r["release_id"], r["effective_date"], r["type"], r["field"], *(shock or (None,) * 6),
-                       r["new_information"], r["required_action"], None if shock else "field/valor no mapeable"))
-twist = (spark.createDataFrame(twist_rows,
-            "release_id STRING, effective_date STRING, type STRING, field STRING, target_table STRING, client_id STRING, "
-            "target_column STRING, operation STRING, shock_value DOUBLE, horizon_months INT, new_information STRING, "
-            "required_action STRING, _quarantine_reason STRING")
-         .withColumn("effective_date", F.to_date(to_ts("effective_date"))))
-write(twist.filter("_quarantine_reason IS NULL").drop("_quarantine_reason"), f"{SILVER}.scenario_twist")
-write(twist.filter("_quarantine_reason IS NOT NULL"), f"{SILVER}.scenario_twist_quarantine")
-dq_log.append(("scenario_twist", "Mapear field a tabla/columna/operación", twist.filter("_quarantine_reason IS NULL").count()))
-dq_log.append(("scenario_twist", "Cuarentena: field/valor no mapeable", twist.filter("_quarantine_reason IS NOT NULL").count()))
-display(twist)
 
 # COMMAND ----------
 

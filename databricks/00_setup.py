@@ -31,7 +31,7 @@ spark.sql(f"CREATE VOLUME IF NOT EXISTS {BRONZE}.landing COMMENT 'Archivos CSV d
 
 # MAGIC %md
 # MAGIC ## Subir los CSV
-# MAGIC **Opción UI:** Catalog → `credicorp_dq` → `bronze` → Volumes → `landing` → *Upload to this volume* → arrastra los 8 CSV (incluye `dataset_twist.csv`).
+# MAGIC **Opción UI:** Catalog → `credicorp_dq` → `bronze` → Volumes → `landing` → *Upload to this volume* → arrastra los 7 CSV.
 # MAGIC
 # MAGIC **Opción CLI (desde tu máquina):**
 # MAGIC ```bash
