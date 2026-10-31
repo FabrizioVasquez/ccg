@@ -35,6 +35,7 @@ Hackathon presencial de Credicorp Capital (31 oct 2026, 8:00 a 14:00, Lima). Ret
 ## Documentación
 
 - [`docs/00_contexto_negocio.md`](docs/00_contexto_negocio.md): rama de negocio (Wealth Management), método por ciclos y decisiones tomadas
+- [`docs/etapa3_propuesta.md`](docs/etapa3_propuesta.md): **propuesta final para CL_02** (núcleo 28% + liquidez COP), métricas defendibles, walk-forward y valor en S/
 - [`docs/etapa2_resumen.md`](docs/etapa2_resumen.md), [`docs/etapa2_guia_junior.md`](docs/etapa2_guia_junior.md) y [`docs/etapa2_reporte_cientifico_datos.md`](docs/etapa2_reporte_cientifico_datos.md): etapa 2 (foco CL_02, señal, limpieza, robustez y twist)
 - [`docs/brief.md`](docs/brief.md): brief oficial completo del evento (23 páginas)
 - [`docs/data_mesh_architecture.md`](docs/data_mesh_architecture.md): arquitectura data mesh de 2 dominios
