@@ -66,9 +66,8 @@ Resuelto con el brief completo ([`docs/brief.md`](docs/brief.md), p.18). Es una 
 
 La fuente incluye notas de sala ordenadas por tema: evaluación, arquitectura y gobernanza, y habilidades. **Pendiente: no se pegó el contenido.**
 
-## Contexto adicional (vault de Obsidian)
+## Contexto adicional
 
 - Evento: 31 oct 2026, 8:00 a 14:00, Centro Empresarial Cronos, Lima. Reto de 6 horas y defensa ante panel.
 - Stack esperado: Python, SQL, Databricks; Azure es un plus.
 - Se evalúa: entrar al problema y explorar, explorar datos y construir solución, traducir hallazgos en una decisión de valor, y defender ante el panel.
-- Notas completas en Obsidian: `hackathon/Credicorp Capital - Value Finders/`.

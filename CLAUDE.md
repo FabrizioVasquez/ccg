@@ -20,5 +20,4 @@ Proyecto: hackathon Credicorp Capital - Value Finders. Ver `README.md` para el r
 
 - `main` estable. Una rama `feat/*` por línea de trabajo (lista en `README.md`).
 - Código en `src/`, SQL en `sql/`, notebooks en `notebooks/`, docs en `docs/`.
-- Notas del equipo en Obsidian (`hackathon/Credicorp Capital - Value Finders/`). Si cambia algo relevante, actualizar la nota y el `.md` del repo.
 - Idioma: español.

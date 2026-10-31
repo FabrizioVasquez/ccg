@@ -41,7 +41,6 @@ Hackathon presencial de Credicorp Capital (31 oct 2026, 8:00 a 14:00, Lima). Ret
 - [`.claude/`](.claude/): skills y agentes del equipo (selección de [ECC](https://github.com/affaan-m/ECC), MIT, más `data-scientist`)
 - [`REQUERIMIENTOS.md`](REQUERIMIENTOS.md): requisitos del reto y pendientes
 - [`ANALISIS.md`](ANALISIS.md): análisis inicial de los datos y propuesta de ramas
-- Notas completas en Obsidian: `hackathon/Credicorp Capital - Value Finders/`
 
 ## Ramas
 
