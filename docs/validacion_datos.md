@@ -50,8 +50,10 @@ Generado con `python src/validacion.py` sobre `dataset_start/` (solo lectura). L
 - 1 `period_end` con formato `Q4-2024` en vez de fecha.
 - 1 ingreso como texto con coma de miles (`1,845.7`).
 - 1 `cash_usd_m` nulo (ISS_07, 2025-09-30).
-- Sin negativos, EBITDA nunca supera ingresos, utilidad nunca supera EBITDA. Dos saltos trimestrales de ingresos >30%, por revisar.
-- Tras limpiar: 8 emisores × 8 trimestres (2024-09-30 a 2026-06-30).
+- Sin negativos, EBITDA nunca supera ingresos, utilidad nunca supera EBITDA.
+- **ISS_06, 2025-06-30: ingresos 1,845.7** contra ~2.840 en los trimestres vecinos (-35% y luego +55%). Los "dos saltos" son un solo valor erróneo; tratarlo como nulo o interpolar.
+- **ISS_02:** su fila `Q4-2024` duplica la de 2024-12-31, así que le falta un trimestre. Tras limpiar queda con 7.
+- Tras limpiar: 7 emisores × 8 trimestres más ISS_02 con 7 (2024-09-30 a 2026-06-30).
 
 ### Tablas pequeñas
 - `04_asset_reference` (8), `05_client_profiles` (3) y `06_events` (5): limpias.
@@ -82,5 +84,5 @@ Generado con `python src/validacion.py` sobre `dataset_start/` (solo lectura). L
 ## Pendientes
 
 1. Confirmar con los organizadores la relación entre diario y expanded.
-2. Revisar los 2 saltos de ingresos >30% en fundamentales.
+2. Confirmar el valor real de ingresos de ISS_06 en 2025-06-30 y el trimestre faltante de ISS_02.
 3. Confirmar que 2026-03-23 de VF_A06 es un error de ×100 y no un evento real.

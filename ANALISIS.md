@@ -48,8 +48,16 @@ Las restricciones son reglas duras y se pueden codificar directo en el motor de 
 
 Orden crítico: `ingesta-calidad`, `modelo-datos` y `features-riesgo`. Luego `fundamentales-eventos` y `motor-recomendacion` en paralelo. `pitch-demo` corre durante todo el proceso.
 
+## Foco elegido: CL_02 (preservación patrimonial)
+
+Decisión del bloque 2. Detalle en [`docs/encuadre_problema.md`](docs/encuadre_problema.md); cifras con `python src/senales.py`.
+
+- **Por qué CL_02:** su restricción de riesgo es la que manda. Ningún activo solo cumple la caída máxima de 10%, la cartera equiponderada cae 17.2% y solo 58 de 60 000 carteras probadas cumplen todo.
+- **Señales:** solo A05 (+31.9%) y A04 (+20.5%) suben en el año. A01 y A08 son defensivos (baja volatilidad y beta) con fundamentales que mejoran. Los eventos explican las peores caídas (A02, A07). Las correlaciones son bajas (0 a 0.26). El USD/COP sube 2.56%, a favor del cliente.
+- **Hipótesis de decisión:** núcleo defensivo (A05, A01, A08) más A04, con ≤25% en alta volatilidad y pesos de menor caída. Referencia: +11.5% en COP con caída de -9.5%.
+- **Riesgos:** ajuste dentro de la misma muestra, solución frágil, concentración en A05, reversión del tipo de cambio, y 1 año de datos para un horizonte de 36 meses.
+
 ## Pendientes
 
-1. Decidir si el CSV expanded (37 MB) va al repo o a `.gitignore`.
-2. Listado de las 5 preguntas del dashboard: define el modelo gold.
-3. Asignar una rama por persona si trabajan varios.
+1. Asignar una rama por persona si trabajan varios.
+2. Validar la cartera fuera de muestra (bloque 3).
