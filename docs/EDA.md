@@ -1,6 +1,6 @@
 # EDA: calidad y exploración en soles (PEN)
 
-Reproducible con [`notebooks/EDA.ipynb`](../notebooks/EDA.ipynb) (parte A: calidad; parte B: exploración en PEN). Reglas de limpieza alineadas con `databricks/02_silver.py`. Periodo: 2025-08-01 a 2026-08-14 (271 días hábiles, 8 activos).
+Reproducible con [`notebooks/EDA.ipynb`](../notebooks/EDA.ipynb) (parte A: calidad; parte B: exploración en PEN). Corre en local y en Databricks: si encuentra los CSV (`DATA_DIR`, `data/` o el Volume `/Volumes/credicorp_dq/bronze/landing`) los usa; si no, lee las tablas `credicorp_dq.bronze.*`. Cifras alineadas con [`etapa2_reporte_cientifico_datos.md`](etapa2_reporte_cientifico_datos.md): se reporta en S/ y el riesgo se mide en la moneda base del cliente. Reglas de limpieza alineadas con `databricks/02_silver.py`. Periodo: 2025-08-01 a 2026-08-14 (271 días hábiles, 8 activos).
 
 ## Tipo de cambio: qué usamos y por qué
 
@@ -51,7 +51,7 @@ El diccionario dice que el diario termina el 2026-07-21; en realidad llega al 20
 | VF_A03 | Energy / Colombia | −27,3% | −26,5% | 35,2% | −44,1% | −12,5% |
 | VF_A07 | Materials / Chile | −27,5% | −26,7% | 38,6% | −38,7% | −25,8% |
 
-- Solo 2 de 8 activos ganan. La cartera equiponderada en PEN cierra en −7,2%, con volatilidad del 16,0% y **max DD de −21,3%**: solo cabe en la tolerancia de CL_01 (22%).
+- Solo 2 de 8 activos ganan. La cartera equiponderada (compra y mantiene) cierra en −8,7% en PEN. Medida en la moneda base de cada cliente, su max DD es −21,7% en USD (CL_01: cumple su 22% al límite), **−19,0% en COP (CL_02: casi el doble de su 10%)** y −23,2% en PEN (CL_03). Sobre S/ 1 000 000, la pérdida máxima de CL_02 sería de S/ 189 702.
 - VF_A02 subió cerca de +80% hasta nov-2025 y después lo perdió todo: es el activo con el mayor drawdown (−56%).
 - Activos de alta volatilidad (más de 30% anual, supuesto): VF_A02, VF_A03, VF_A06 y VF_A07.
 
@@ -62,7 +62,7 @@ El diccionario dice que el diario termina el 2026-07-21; en realidad llega al 20
 
 ## 5. Correlaciones
 
-- Son bajas: de 0,0 a 0,27, con media de 0,12 a 0,21. Diversificar entre estos activos reduce bastante el riesgo.
+- Son bajas: de 0,0 a 0,27, con media de 0,12 a 0,21. Diversificar entre estos activos reduce el riesgo. Pero la correlación de cada par es ruido (no se repite entre periodos, H4 del reporte), así que no hay que optimizar pesos con ellas.
 - Beta contra `market_factor`: VF_A02 (1,47) es el más agresivo; VF_A08 (0,35) y VF_A01 (0,43) son los más defensivos.
 
 ## 6. Regímenes de riesgo
@@ -80,7 +80,7 @@ El diccionario dice que el diario termina el 2026-07-21; en realidad llega al 20
 | VF_A03 | −1,0% | −2,1% |
 | VF_A01 | **+2,9%** | +1,7% |
 
-- VF_A01 es el único activo que sube en el estrés y VF_A05 casi no cae: son los refugios.
+- VF_A01 es el único activo que sube en el estrés y VF_A05 casi no cae. Ojo: fue un solo episodio de 10 días, idiosincrático (la correlación entre activos bajó a 0,035), así que es un indicio, no una regla.
 - VF_A04 cae −10,5% y no se recupera en la ventana de Recovery. Es el riesgo principal del segundo mejor activo.
 
 ## 7. Eventos (retorno anormal frente a la cartera equiponderada, en PEN)
@@ -93,21 +93,22 @@ El diccionario dice que el diario termina el 2026-07-21; en realidad llega al 20
 | 2026-06-08 | VF_A07 | Debilidad de demanda (High) | −4,7% | **−8,4%** |
 | 2026-07-21 | Technology (VF_A02) | Repricing de múltiplos | −8,4% | −3,4% |
 
-- Los eventos de severidad High mueven el precio en la dirección esperada.
-- El buen resultado de VF_A04 ya estaba en el precio antes del anuncio (+7,5% previo): una posible señal de anticipación.
+- Los eventos de severidad High mueven el precio en la dirección esperada. La dirección coincide en 4 de 5 eventos, pero con prueba estadística solo el de A02 es significativo (H13 del reporte); el de A04 no lo es.
 
 ## 8. Fundamentales (último trimestre, 2026-06-30)
 
-| Emisor | Crec. revenue a/a | Margen neto | Margen EBITDA | Deuda neta/EBITDA | Revenue trimestral (S/ m) |
+| Emisor | Crec. revenue a/a | Margen neto | Margen EBITDA | Deuda neta/EBITDA LTM | Revenue trimestral (S/ m) |
 |---|---|---|---|---|---|
 | ISS_04 (VF_A04) | 10,0% | 20% | 30% | 0,29 | 17.225 |
-| ISS_05 (VF_A05) | 9,1% | 20% | 28% | 0,29 | 7.936 |
+| ISS_05 (VF_A05) | 9,1% | 20% | 28% | 0,31 | 7.936 |
 | ISS_02 (VF_A02) | 10,0% | 14% | 27% | 0,23 | 11.894 |
 | ISS_07 (VF_A07) | 8,7% | 13% | 21% | 0,12 | 20.162 |
-| ISS_01 (VF_A01) | 6,8% | 22% | 33% | 0,26 | 8.231 |
-| ISS_06 (VF_A06) | s/d (outlier hace 1 año) | 8% | 16% | **0,62** | 11.469 |
+| ISS_01 (VF_A01) | 6,8% | 22% | 33% | 0,27 | 8.231 |
+| ISS_06 (VF_A06) | s/d (outlier hace 1 año) | 8% | 16% | **0,68** | 11.469 |
 | ISS_03 (VF_A03) | 4,7% | 7% | 12% | 0,01 | 12.545 |
-| ISS_08 (VF_A08) | 3,7% | 8% | 12% | −0,25 (caja neta) | 7.704 |
+| ISS_08 (VF_A08) | 3,7% | 8% | 12% | −0,24 (caja neta) | 7.704 |
+
+El apalancamiento usa EBITDA LTM (suma de los últimos 4 trimestres), igual que `gold.fundamentals_ratios`. El cash nulo de ISS_07 no se imputa.
 
 - Todos los emisores tienen poca deuda. El más apalancado es ISS_06.
 - VF_A04 y VF_A05 combinan buen precio con buenos fundamentales. VF_A02 tiene fundamentales sanos y aun así su precio cayó: lo explican los eventos y el repricing del sector, no el negocio.
@@ -116,4 +117,4 @@ El diccionario dice que el diario termina el 2026-07-21; en realidad llega al 20
 
 1. Medir en soles no cambia el ranking de activos; el FX resta alrededor de 1 pp a cada uno.
 2. Solo VF_A05 y VF_A04 generan valor. VF_A01 y VF_A08 aportan defensa (beta baja y buen comportamiento en el estrés), no rentabilidad.
-3. Repartir en partes iguales (DD −21,3%) rompe los límites de CL_02 (10%) y CL_03 (15%). Lo que hay que decidir es cuánto exponer al cliente, además de qué comprar.
+3. Repartir en partes iguales rompe los límites de CL_02 (−19,0% en COP frente a 10%) y CL_03 (−23,2% en PEN frente a 15%). Lo que hay que decidir es cuánto exponer al cliente, además de qué comprar.
