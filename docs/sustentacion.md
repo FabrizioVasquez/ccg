@@ -77,8 +77,29 @@ Las cifras de CL_02 son malas **a propósito**: miden **qué tan difícil es el 
 
 ## 4. Rentabilidad: por año, por trimestre y por qué
 
-### Simulación a futuro (36 meses, deriva cero)
+### Simulación a futuro (36 meses, 2000 escenarios)
 - Patrimonio final más el retiro entregado (mediana): **S/ 992 534**. Con deriva cero, el escenario base no supone ganancias: mide el riesgo, no promete retorno.
+- El detalle completo, con gráficos y la explicación para no técnicos, está en [`etapa4_reporte_financiero.md`](etapa4_reporte_financiero.md).
+
+**Rentabilidad acumulada de la propuesta: caso típico (p50) y rango del 5% peor al 5% mejor**
+
+| Horizonte | Base: deriva 0, liquidez 0% | Optimista: se repite la tendencia del año | Equiponderada (base) |
+|---|---|---|---|
+| 1 trimestre | −0,1% [−2,1%; +2,1%] | +0,2% [−1,8%; +2,4%] | −0,4% [−12,6%; +14,3%] |
+| 1 año | −0,3% [−4,3%; +4,1%] | +1,0% [−3,2%; +5,4%] | −1,1% [−24,5%; +29,4%] |
+| 2 años | −0,6% [−6,2%; +5,4%] | +1,9% [−3,8%; +8,1%] | −1,7% [−32,4%; +43,5%] |
+| **36 meses** | **−0,9% [−7,7%; +6,5%]** | **+2,9% [−4,3%; +10,7%]** | −3,6% [−38,3%; +55,9%] |
+
+**La palanca real de rentabilidad es la liquidez (80% del patrimonio).** Los datos no traen tasa en COP, así que la tasa es un supuesto:
+
+| Tasa de la liquidez en COP | Rentabilidad a 36 m (p50) | Anualizada | P(cumplir −10%) |
+|---|---|---|---|
+| 0% | −0,9% | −0,3% | 95,7% |
+| 2% | +3,9% | +1,3% | 99,7% |
+| 4% | +8,9% | +2,9% | 100% |
+| 6% | +14,0% | +4,5% | 100% |
+
+Cada punto de tasa suma ≈ 0,8 pp al año **y** baja el riesgo de romper el límite.
 
 ### Lo que habría pasado el último año (backtest, en COP)
 Supuestos: rebalanceo trimestral, la liquidez rinde 0%, sin retiro.
@@ -146,7 +167,7 @@ Un cliente de preservación se va cuando **ve caer su dinero más de lo que agua
 | "Las correlaciones permiten optimizar pesos" | La correlación por par es ruido (0,04 entre train y test) | Pesos simples (inversa de volatilidad), no optimizados |
 | "Los eventos explican los precios" | La dirección coincide en 4/5, pero solo 1/5 es significativo | Son contexto, no señal |
 | "28% de exposición alcanza" | Se calculó a 1 año; el horizonte es de 36 meses | **Corregimos a 20%** |
-| "Una LSTM pronosticará mejor el riesgo" | Hipótesis H2 con criterio de éxito fijado **antes** de entrenar (mejorar 10% a EWMA y cambiar la decisión) | Veredicto en `gold.etapa4_lstm_decision`: *completar con el resultado de la corrida* |
+| "Una LSTM pronosticará mejor el riesgo" | Hipótesis H2 con criterio de éxito fijado **antes** de entrenar (mejorar 10% a EWMA y cambiar la decisión) | **Rechazada.** Supera a EWMA en +24% de QLIKE, pero la volatilidad histórica simple le gana en 16% y no cambia ni el núcleo ni el 20%. Se mantiene la regla simple (ver Anexo A) |
 | Datos del diccionario | El intradía va de 2020 a 2026 (no 2020-2022) y el diario termina el 2026-08-14 | Documentado en el EDA |
 | Ratio de apalancamiento | Una versión usaba EBITDA trimestral y sobrestimaba 4 veces | Corregido a EBITDA LTM (A06: 0,68x) |
 
@@ -411,3 +432,111 @@ Python (pandas, NumPy, PyTorch), PySpark y SQL sobre Delta Lake; Unity Catalog; 
 | Linaje | Rastro de dónde viene cada dato y qué le pasó |
 | Metric view | Definición única y gobernada de una métrica en Unity Catalog |
 | Genie | Asistente de Databricks para preguntar a los datos en lenguaje natural |
+
+---
+
+## Anexo A. La LSTM: cómo se ve, con qué datos se entrenó y cómo defenderla
+
+> Notebook: `notebooks/etapa4_lstm_volatilidad_cl02.py` (en Databricks: `hackaton-credicorp/09_lstm_volatilidad_cl02`). Tablas: `gold.etapa4_lstm_metricas`, `_predicciones`, `_sobreajuste`, `_particiones`, `_decision`. MLflow: experimento `/Users/<usuario>/ccg_etapa4_lstm_vol_cl02`; modelo registrado en `credicorp_dq.gold.lstm_vol_cl02`. Diagramas: `src/analysis/etapa4_lstm_diagramas.py`.
+
+### A.1 Defensa en 30 segundos
+> "La LSTM no la usamos para elegir acciones, porque el retorno no se puede predecir en estos datos. La usamos para la única pregunta donde podía aportar: **¿podemos anticipar el riesgo del mes siguiente y ajustar cuánto invertir?** Fijamos el criterio de éxito antes de entrenar: mejorar al estándar de la industria (EWMA de RiskMetrics) en al menos 10% **y** cambiar la decisión del cliente. La LSTM mejora a EWMA en 24%, pero el promedio histórico simple le gana y la decisión no cambia. Por eso recomendamos la regla simple: es igual de buena, más barata y más explicable. **La IA sirvió para validar la decisión, no para adornarla.**"
+
+### A.2 Qué es la LSTM (en simple)
+
+![arquitectura](img/etapa4_lstm/00_arquitectura_lstm.png)
+
+- Una **LSTM** (*Long Short-Term Memory*) es una red neuronal que **lee una serie en orden, día por día, y decide qué recordar y qué olvidar**, como un analista que revisa las últimas 3 semanas de un activo antes de opinar.
+- **Unidad de análisis:** activo × día (8 activos), con retornos en COP.
+- **Qué recibe:** los últimos **21 días hábiles** de un activo. Por cada día recibe 13 datos:
+  - el retorno y su valor absoluto;
+  - la volatilidad de 5, 21 y 63 días;
+  - qué activo es (8 columnas de 0 y 1).
+- **Qué predice:** el **logaritmo de la volatilidad anualizada de los próximos 21 días**, es decir, el riesgo del mes que viene.
+- **Por qué volatilidad y no precio:** la volatilidad es lo único que persiste (ρ 0,93–0,98) y es lo que mueve la decisión de cuánto invertir. El precio y el retorno no se pueden pronosticar en estos datos (ρ ≈ 0).
+- **Por qué el logaritmo:** la volatilidad siempre es positiva y asimétrica. En logaritmo, equivocarse ×2 hacia arriba pesa igual que hacia abajo, y el modelo entrena de forma más estable.
+- **Tamaño:** 1 capa LSTM de 16 neuronas, unos 2000 parámetros. Es pequeña a propósito, porque solo hay 1840 secuencias diarias y una red grande memorizaría.
+
+### A.3 ¿Qué es el "intradía" y qué significa "pre-entrenada"?
+
+| Término | Qué es |
+|---|---|
+| **Diario** | `01_market_prices_raw.csv` (silver: `market_prices_daily`): 1 precio de cierre por día y activo, del **2025-08-04 al 2026-08-14** (270 días). Es la **fuente oficial**: con ella se entrena, se valida y se evalúa |
+| **Intradía** | `01_market_prices_raw_expanded.csv` (silver: `market_prices_intraday`): precios **dentro del día**, del **2020 al 2026**. Para la LSTM lo convertimos a 1 cierre por día y usamos solo el tramo **anterior** al diario: **2020-01-02 → 2025-08-01** (1455 días). Está en USD porque no hay tipo de cambio para esas fechas |
+| **Por qué no usamos el intradía como dato principal** | **Contradice al diario** en las fechas en que se solapan (correlación de retornos ≈ 0,06). No podemos tratarlo como la misma historia de precios |
+| **Por qué sí sirve para pre-entrenar** | Tiene algo que al diario le falta: **rachas de volatilidad** (efecto ARCH, p < 0,001; en el diario p ≥ 0,08). No le pedimos niveles de precio, solo que la red aprenda cómo se comporta el riesgo en el tiempo |
+| **LSTM diario** | Red que aprende **solo** con los datos diarios previos a cada corte |
+| **LSTM pre-entrenada** | Red que primero **aprende la dinámica del riesgo con 5,5 años de intradía** (25 épocas) y luego se **ajusta con el diario** con una tasa de aprendizaje 4 veces menor, para no olvidar lo aprendido. Es la idea de *transfer learning*: como un analista que estudió 5 años de otro mercado antes de mirar este |
+| **Resultado** | La pre-entrenada mejora apenas a la diaria (QLIKE 0,061 frente a 0,062). La estructura que trae el intradía casi no existe en el diario |
+
+### A.4 ¿De dónde a dónde van los datos y cómo se dividen?
+
+![particiones](img/etapa4_lstm/05_linea_tiempo_particiones.png)
+
+| Tramo | Fechas | Para qué |
+|---|---|---|
+| Pre-entrenamiento (solo la variante pre-entrenada) | 2020-01-02 → 2025-08-01 | Aprender la dinámica de la volatilidad |
+| Calentamiento | 2025-08-04 → 2025-09-26 | Se necesitan al menos 21 días de volatilidad y 21 días de secuencia antes del primer ejemplo |
+| Entrenamiento | desde 2025-09-29 hasta ~1,5 meses antes del corte | Ajustar los pesos de la red |
+| Validación | el **15% más reciente** del entrenamiento | Decidir **cuándo parar** (early stopping). Nunca se usa para el veredicto |
+| Hueco | ~21 días hábiles antes del corte | Un ejemplo solo entra a entrenamiento si **los 21 días que predice terminan antes del corte**. Así el test nunca se filtra |
+| Test | el mes siguiente a cada corte (feb, mar, abr, may y jun→16-jul-2026) | Examen final fuera de muestra |
+
+**Por qué este esquema (walk-forward con 5 cortes mensuales, de feb a jun de 2026):**
+1. **Respeta el tiempo.** En finanzas no se puede mezclar al azar: entrenar con junio y evaluar con marzo es hacer trampa. Cada examen usa solo el pasado.
+2. **Imita el uso real.** El asesor reentrena con lo que sabe hoy y pronostica el mes que viene.
+3. **Por qué empieza en febrero:** antes no hay suficientes ejemplos (el corte de febrero ya tiene 552).
+4. **Por qué termina en junio:** el último objetivo de 21 días debe caber antes del 14-ago-2026, el fin de los datos.
+5. **5 exámenes y no 1:** un solo mes podría ser suerte. Son 952 pronósticos fuera de muestra (activo × día).
+6. **EWMA y las otras líneas base** se evalúan en **los mismos días y activos**, así que la comparación es justa. EWMA no se entrena: λ = 0,94 es el estándar de RiskMetrics.
+
+### A.5 Función de error, métrica y épocas
+
+| Elemento | Valor | Por qué |
+|---|---|---|
+| Función de pérdida (entrenamiento) | **MSE sobre log(vol 21d)** | Simple y estable; el logaritmo hace simétricos los errores relativos |
+| Métrica de decisión | **QLIKE** = media de (σ²real/σ²pred − ln(σ²real/σ²pred) − 1) | Es el estándar académico para comparar pronósticos de riesgo: castiga más **subestimar** el riesgo, que es el error caro para un cliente conservador |
+| Métricas de apoyo | RMSE de la volatilidad anual y Spearman entre activos | Error en puntos de volatilidad y si ordena bien qué activo es más riesgoso |
+| Épocas | hasta **80** (ajuste) y **25** (pre-entrenamiento) | Con *early stopping* de paciencia **12**: se guarda la época con menor error de validación (en promedio, la época ~25) |
+| Optimizador | Adam, lr 0,002 (0,0005 en el ajuste fino), weight decay 1e-4, lotes de 64 | Valores estándar para redes pequeñas |
+| Regularización | dropout 20%, weight decay, early stopping, red chica, **ensamble de 3 semillas** | Defensas contra el sobreajuste con pocos datos |
+
+### A.6 ¿Sobreajusta? Curvas de entrenamiento y brecha
+
+![curvas](img/etapa4_lstm/03_curvas_aprendizaje.png)
+
+![brecha](img/etapa4_lstm/04_brecha_generalizacion.png)
+
+**Cómo leerlo:**
+- Hay sobreajuste cuando la curva azul (train) sigue bajando mientras la roja (validación) sube. La línea punteada marca la época que se guardó.
+- **LSTM diario:** train y validación bajan juntas y casi se superponen. No hay sobreajuste marcado. El early stopping corta entre las épocas 10 y 30, salvo en el corte de abril, que llega al máximo de 80.
+- **LSTM pre-entrenada:** en los cortes de febrero y abril la validación se estanca o sube mientras el train sigue bajando. **Hay señal de sobreajuste, y el early stopping la detecta** y guarda la época anterior (29 y 6).
+- **Brecha promedio (MSE en log-vol):** train ≈ 0,026 → validación ≈ 0,027–0,031 → test ≈ 0,034, es decir, el test es ~1,4 veces el train. Una brecha moderada es esperable, porque el test es un mes nuevo. **El error de EWMA en el mismo test es ≈ 0,041**, así que la LSTM generaliza mejor que EWMA. Las cifras exactas de cada corrida están en `gold.etapa4_lstm_sobreajuste`.
+
+### A.7 Resultados y por qué no cambia la decisión
+
+![metricas](img/etapa4_lstm/01_metricas.png)
+
+| Modelo | QLIKE (menor = mejor) | Frente a EWMA |
+|---|---|---|
+| Volatilidad histórica (promedio de todo el pasado) | **0,053** | +34% |
+| LSTM pre-entrenada | 0,061 | +24% |
+| LSTM diario | 0,062 | +22% |
+| EWMA 0,94 | 0,079 | — |
+| Vol 21 días | 0,104 | −31% |
+
+![pronostico](img/etapa4_lstm/02_pronostico_nucleo.png)
+
+- **Por qué gana el promedio histórico:** en estos datos el riesgo es casi constante (el núcleo se mueve entre 17% y 24%) y no tiene rachas. Cuando no hay nada que anticipar, el mejor pronóstico es el promedio de largo plazo. EWMA y la ventana de 21 días reaccionan al ruido reciente y se equivocan más.
+- **Impacto en la decisión:** con la LSTM, el núcleo es el mismo (A01, A04, A05, A08) y la volatilidad pronosticada del núcleo es 22,0% frente a 21,6%. La exposición queda en 20%. **No cambia nada para el cliente.**
+- **Veredicto H2: rechazada.** Mantener la regla simple es una decisión basada en evidencia, no una falta de ambición.
+
+### A.8 Preguntas probables del jurado
+
+| Pregunta | Respuesta corta |
+|---|---|
+| ¿Por qué una LSTM y no XGBoost o GARCH? | La LSTM lee secuencias y puede aprovechar el pre-entrenamiento con el intradía. GARCH necesita rachas de volatilidad (ARCH), que el diario no tiene (p ≥ 0,08), y EWMA es su versión estándar, que ya está como línea base |
+| ¿No es poca data para deep learning? | Sí, y por eso la red es pequeña (≈ 2000 parámetros), hay early stopping, dropout, ensamble de 3 semillas y pre-entrenamiento. Y aun así lo decimos: el modelo simple gana |
+| ¿Cómo sé que no hicieron trampa con el futuro? | Walk-forward con hueco de 21 días, fechas en `gold.etapa4_lstm_particiones` y criterio de éxito fijado antes de entrenar |
+| ¿Entonces para qué sirve? | Queda **lista y registrada en MLflow / Unity Catalog**. Si llegan datos con rachas de volatilidad (una crisis real), se reentrena y se reevalúa con el mismo criterio. Si supera a la histórica, la exposición pasa a ser dinámica (X = 20% × vol objetivo / vol pronosticada) |
+| ¿Es reproducible? | Semillas fijas; MLflow guarda hiperparámetros, la pérdida por época de cada corte, las métricas, los gráficos, las tablas y el modelo final con su firma |
