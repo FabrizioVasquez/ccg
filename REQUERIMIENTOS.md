@@ -1,15 +1,10 @@
 # Requerimientos del reto: Credicorp Capital - Value Finders
 
-> Fuente: resumen de las diapositivas del evento, pegado por el usuario. Es un índice de secciones: el detalle de cada una (columnas de los datos, las 5 preguntas del dashboard, criterios de evaluación) **no está en esta fuente**. No inventar; pedirlo al usuario o revisar el material oficial.
+> Fuente: PDF oficial del reto (resumen pegado por el usuario) más un resumen previo de las diapositivas. Los tiempos están en [`TIEMPOS.md`](TIEMPOS.md).
 
-## Notas de la fuente
+## 1. Caso y rol
 
-- Las fotos "9.00.16 AM" y "9.00.16 AM (1)" son la misma diapositiva.
-- En dos diapositivas una persona tapaba parte del texto: la descripción de **Asset Reference** y la nota al pie de **Qué recibirán**. Lo deducido iba entre corchetes en la fuente original. Conviene verificar esas dos partes con el material oficial.
-
-## 1. Contexto de negocio
-
-Credicorp Capital acompaña decisiones de patrimonio e inversiones.
+Somos el equipo de Data & Analytics de una compañía de inversiones que asesora a clientes sobre su patrimonio. Credicorp Capital acompaña decisiones de patrimonio e inversiones.
 
 ## 2. Pregunta guía
 
@@ -20,49 +15,49 @@ Credicorp Capital acompaña decisiones de patrimonio e inversiones.
 | Perfil | Orientación |
 |---|---|
 | 01 | Orientado al crecimiento |
-| 02 | Busca preservar su patrimonio |
+| 02 | Enfocado en la preservación patrimonial |
 | 03 | Busca diversificación regional |
 
-## 4. Qué recibirán
+## 4. Insumos (Data Pack)
 
-Dataset sintético con:
+Dataset sintético basado en estructuras financieras reales:
 
 - más de 500 000 registros de mercado
 - 271 observaciones de contexto macro
 - 65 registros financieros
 
-## 5. Organización de los datos
+| Grupo | Contenido | Archivo |
+|---|---|---|
+| 01 Market Raw | Precios, volúmenes, mercado, moneda y activos | `01_market_prices_raw.csv`, `01_market_prices_raw_expanded.csv` |
+| 02 Macro Raw | Tasa 10Y, inflación, FX y régimen de mercado | `02_macro_raw.csv` |
+| 03 Fundamentals Raw | Revenue, EBITDA, utilidad, deuda y caja | `03_fundamentals_raw.csv` |
+| 04 Asset Reference | Referencia de activos, emisores, sectores y países | `04_asset_reference.csv` |
+| 05 Client Profiles | Perfiles de cliente y sus necesidades | `05_client_profiles.csv` |
+| 06 Events | Eventos que pueden explicar movimientos o cambios | `06_events.csv` |
 
-Seis grupos de datos. Archivos en `dataset_start/`:
+## 5. Entregables
 
-| Grupo | Archivo |
-|---|---|
-| Market Raw | `01_market_prices_raw.csv`, `01_market_prices_raw_expanded.csv` |
-| Macro Raw | `02_macro_raw.csv` |
-| Fundamentals Raw | `03_fundamentals_raw.csv` |
-| Asset Reference | `04_asset_reference.csv` |
-| Client Profiles | `05_client_profiles.csv` |
-| Events | `06_events.csv` |
+1. **Solución analítica funcional:** MVP ejecutable o reproducible con **Python + SQL usando Databricks** (notebook, pipeline, modelo, scoring, etc.).
+2. **Decision Dashboard:** vista ejecutiva principal (*one main view*) que responda:
+   - qué ocurre
+   - las señales
+   - el impacto en el cliente
+   - la recomendación
+   - los riesgos o supuestos
+3. **Value Pitch:** presentación y defensa de la decisión frente al jurado.
 
-(La fuente describe el contenido de cada grupo, pero ese detalle no se pegó. Ver las cabeceras de los CSV cuando tengan datos.)
+## 6. Reglas técnicas y herramientas
 
-## 6. Qué deben entregar
+- Laptop propia.
+- Requerido: **Python + SQL + Databricks**.
+- Permitido: Databricks, Power BI u otras visualizaciones, notebooks, librerías open source, APIs, modelos de machine learning y **herramientas generativas / asistentes de IA**.
 
-1. **MVP** con Python + SQL en Databricks.
-2. **Decision Dashboard.**
-3. **Value Pitch:** presentación y demo ante el jurado.
+## 7. Dinámica
 
-## 7. Preguntas que debe responder el dashboard
+6 horas en total, en 4 bloques más el pitch (8 min por equipo). Detalle y estado en [`TIEMPOS.md`](TIEMPOS.md).
 
-El dashboard responde 5 preguntas. **Pendiente: no se pegó el listado.**
+## Pendientes
 
-## 8. Notas de sala
-
-La fuente incluye notas de sala ordenadas por tema: evaluación, arquitectura y gobernanza, y habilidades. **Pendiente: no se pegó el contenido.**
-
-## Contexto adicional (vault de Obsidian)
-
-- Evento: 31 oct 2026, 8:00 a 14:00, Centro Empresarial Cronos, Lima. Reto de 6 horas y defensa ante panel.
-- Stack esperado: Python, SQL, Databricks; Azure es un plus.
-- Se evalúa: entrar al problema y explorar, explorar datos y construir solución, traducir hallazgos en una decisión de valor, y defender ante el panel.
-- Notas completas en Obsidian: `hackathon/Credicorp Capital - Value Finders/`.
+- Nota al pie de "Qué recibirán" y descripción de Asset Reference: una persona tapaba parte del texto en las diapositivas; verificar con el material oficial.
+- Notas de sala (evaluación, arquitectura y gobernanza, habilidades): no se pegó el contenido.
+- Criterios de evaluación del jurado: no figuran en el resumen.
