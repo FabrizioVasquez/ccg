@@ -60,8 +60,8 @@ ACTIONS = {  # acción -> color (orden categórico fijo; 'sin cambio' en neutro)
 def action(rule):
     if rule.startswith("Cuarentena") or rule.startswith("Scope no mapeable"): return "Enviado a cuarentena"
     if rule.startswith("Eliminar"): return "Eliminado (duplicado)"
-    if rule.startswith(("Completar", "Forward-fill", "Reasignar")): return "Completado / imputado"
-    if rule.startswith("Nulos"): return "Detectado, sin cambio"
+    if rule.startswith(("Completar", "Forward-fill", "Reasignar", "Interpolar")): return "Completado / imputado"
+    if rule.startswith(("Nulos", "Marcar", "Restricción", "Tolerancia")): return "Detectado, sin cambio"
     return "Corregido"
 
 log["accion"] = log.rule.map(action)
@@ -87,7 +87,7 @@ tot_fixed = sum(fixed_rows(f"{SILVER}.{t}") for t in ["market_prices_daily", "ma
 n_rules = log.rule.nunique()
 
 tiles = [
-    ("Filas recibidas (bronze)", fmt(tot_bronze), "7 archivos CSV"),
+    ("Filas recibidas (bronze)", fmt(tot_bronze), f"{len(SOURCES)} archivos CSV"),
     ("Filas en silver", fmt(tot_silver), f"{tot_silver / tot_bronze:.2%} retenido"),
     ("Filas corregidas", fmt(tot_fixed), f"{n_rules} reglas con efecto"),
     ("Duplicados eliminados", fmt(tot_dup), "una fila por llave"),
