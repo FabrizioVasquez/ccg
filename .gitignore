@@ -1,0 +1,19 @@
+# Data del evento (no se publica: repo público). Vive en un Volume de Databricks.
+dataset_start/
+data/
+*.csv
+*.parquet
+*.xlsx
+*.zip
+
+# Credenciales / config local
+.databrickscfg
+.env
+.claude/settings.local.json
+
+# OS / Python
+.DS_Store
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/

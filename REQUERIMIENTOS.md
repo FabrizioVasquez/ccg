@@ -54,7 +54,13 @@ Seis grupos de datos. Archivos en `dataset_start/`:
 
 ## 7. Preguntas que debe responder el dashboard
 
-El dashboard responde 5 preguntas. **Pendiente: no se pegó el listado.**
+Resuelto con el brief completo ([`docs/brief.md`](docs/brief.md), p.18). Es una vista principal que responde:
+
+1. ¿Qué está ocurriendo?
+2. ¿Qué datos o señales lo explican?
+3. ¿Qué significa para el cliente elegido?
+4. ¿Qué debería hacer?
+5. ¿Qué riesgo, supuesto o cambio podría modificar la recomendación?
 
 ## 8. Notas de sala
 

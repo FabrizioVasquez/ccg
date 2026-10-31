@@ -7,7 +7,7 @@ Hackathon presencial de Credicorp Capital (31 oct 2026, 8:00 a 14:00, Lima). Ret
 ## Entregables
 
 1. MVP con Python + SQL en Databricks
-2. Decision Dashboard (responde 5 preguntas, aún por conocer)
+2. Decision Dashboard de una vista: ¿qué está ocurriendo?, ¿qué datos o señales lo explican?, ¿qué significa para el cliente elegido?, ¿qué debería hacer?, ¿qué riesgo, supuesto o cambio podría modificar la recomendación?
 3. Value Pitch: presentación y demo ante el jurado
 
 ## Clientes
@@ -19,6 +19,8 @@ Hackathon presencial de Credicorp Capital (31 oct 2026, 8:00 a 14:00, Lima). Ret
 | CL_03 | Diversificación Regional | PEN | 15% | Al menos 3 países y 3 sectores |
 
 ## Datos (`dataset_start/`)
+
+> No se versiona (repo público, ver `.gitignore`). Cada quien la copia en local y la fuente compartida es el Volume de Databricks.
 
 | Archivo | Contenido |
 |---|---|
@@ -32,6 +34,10 @@ Hackathon presencial de Credicorp Capital (31 oct 2026, 8:00 a 14:00, Lima). Ret
 
 ## Documentación
 
+- [`docs/00_contexto_negocio.md`](docs/00_contexto_negocio.md): rama de negocio (Wealth Management), método por ciclos y decisiones tomadas
+- [`docs/brief.md`](docs/brief.md): brief oficial completo del evento (23 páginas)
+- [`docs/data_mesh_architecture.md`](docs/data_mesh_architecture.md): arquitectura data mesh de 2 dominios
+- [`.claude/`](.claude/): skills y agentes del equipo (selección de [ECC](https://github.com/affaan-m/ECC), MIT, más `data-scientist`)
 - [`REQUERIMIENTOS.md`](REQUERIMIENTOS.md): requisitos del reto y pendientes
 - [`ANALISIS.md`](ANALISIS.md): análisis inicial de los datos y propuesta de ramas
 - Notas completas en Obsidian: `hackathon/Credicorp Capital - Value Finders/`
