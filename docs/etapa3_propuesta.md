@@ -3,14 +3,28 @@
 > **Notebook con gráficos:** `/Workspace/Users/cesaraop.12@gmail.com/hackaton-credicorp/07_etapa3_propuesta_cl02` (fuente: [`notebooks/etapa3_propuesta_cl02.py`](../notebooks/etapa3_propuesta_cl02.py)).
 > **Tablas:** `credicorp_dq.gold.etapa3_*`. **Moneda:** el riesgo se mide en COP (moneda base de CL_02) y los montos se reportan en S/ sobre un patrimonio de S/ 1 000 000 (FX 2026-08-14: USD/PEN 3,6802; USD/COP 4.195,52).
 
-## La recomendación
+## La recomendación (vigente, revisada con el simulador Monte Carlo a 36 meses)
 | Bloque | % patrimonio | Monto |
 |---|---|---|
-| Núcleo defensivo: A08 33% · A01 27% · A05 22% · A04 19% del núcleo | **28%** | S/ 280 000 |
-| Reserva para el retiro de 6 meses (TW_02), liquidez en COP | 30% | S/ 300 000 |
-| Liquidez adicional en COP | 42% | S/ 420 000 |
+| Núcleo defensivo: A08 33% · A01 27% · A05 22% · A04 19% del núcleo | **20%** | S/ 200 000 |
+| Reserva para el retiro del mes 6 (TW_02), liquidez en COP | 30% | S/ 300 000 |
+| Liquidez adicional en COP | 50% | S/ 500 000 |
 
-**Por qué 28%:** la exposición máxima que cumple el límite de 10% con 95% de confianza es X* = 40%. Como el 30% sale en 6 meses, hoy se invierte 70% × 40% = 28%, para que tras el retiro la exposición siga en 40%.
+**Regla de gestión:** rebalancear cada trimestre y al pagar el retiro, para volver a 20% en el núcleo.
+**Resultado (2000 simulaciones, horizonte 36 m, deriva neutra):**
+- P(caída máx ≤ 10%) = **95,7%**, frente a 0,1% de la equiponderada.
+- Caída en el peor 5%: −9,8%. CVaR 95%: −11,0%.
+- Patrimonio final + retiro entregado (p50): S/ 992 534.
+
+> **Por qué cambió de 28% a 20%:** la cifra de 28% se calculó con trayectorias de **1 año**, pero el horizonte de CL_02 es de **36 meses**, y a más tiempo hay más oportunidades de una caída grande. Para 95% de confianza, la exposición máxima es de 50% a 6 meses, 35% a 12, 25% a 18 y 24, y **20% a 36 meses**.
+> Además, la deriva histórica (núcleo +6,3%/año) supone que lo que ganó seguirá ganando, lo que contradice nuestra evidencia de que el retorno no persiste. Por eso el escenario base usa deriva cero. Con la exposición anterior de 28% y el shock combinado del twist (tasa + COP), el límite se cumple solo en el 59% de los casos.
+>
+> **Simulador interactivo:** `hackaton-credicorp/08_simulador_montecarlo_cl02`. Permite cambiar el horizonte, la exposición, la confianza, el rebalanceo, la frecuencia de observación de la caída, el retiro, los shocks y la deriva. La tabla vigente es `gold.etapa3_recomendacion_simulador`; `gold.etapa3_recomendacion` (horizonte de 1 año) queda **reemplazada**.
+
+<details><summary>Versión anterior (horizonte 1 año, reemplazada)</summary>
+
+Núcleo 28% (S/ 280 000) + reserva 30% + liquidez 42%. Se obtenía con X* = 40% a 1 año × 70% por el retiro.
+</details>
 
 ## 1. Por qué CL_02 y no CL_01 ni CL_03
 Criterio: **valor de la información**, es decir, dónde la decisión con datos difiere más del consejo ingenuo ("reparte en partes iguales") y dónde el error cuesta más.
