@@ -9,7 +9,7 @@
 # MAGIC | `event_impact` | evento × activo × día relativo | Retorno anormal acumulado (CAR) de −5 a +10 días |
 # MAGIC | `client_asset_fit` | cliente × activo | Drawdown y volatilidad en la moneda del cliente vs su tolerancia |
 # MAGIC | `dq_scorecard` | tabla | Filas bronze → silver → cuarentena y correcciones aplicadas |
-# MAGIC | `dim_*` / `fact_*` (estrella) | ver sección final | Modelo dimensional para BI (`modelo_estrella.md`) |
+# MAGIC | `dim_*` / `fact_*` (estrella) | ver sección final | Modelo dimensional para BI |
 # MAGIC
 # MAGIC > Gold usa **solo el precio diario**. El intradía no reconcilia con el diario (ver notebook de análisis);
 # MAGIC > queda disponible en `silver.market_prices_intraday` hasta que la fuente defina cuál es la oficial.
@@ -162,7 +162,7 @@ display(scorecard)
 
 # MAGIC %md
 # MAGIC ## Modelo dimensional (estrella)
-# MAGIC Las mismas métricas de arriba reorganizadas en dimensiones + hechos (diseño en `modelo_estrella.md`).
+# MAGIC Las mismas métricas de arriba reorganizadas en dimensiones + hechos.
 # MAGIC Las tablas anchas se mantienen porque el dashboard y `05_reporte_calidad` las leen.
 # MAGIC
 # MAGIC | Tabla | Grano |
