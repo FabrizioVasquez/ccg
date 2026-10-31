@@ -17,9 +17,7 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .venv/
-<<<<<<< Updated upstream
 
+# Databricks bundle cache / salidas locales de notebooks
 .databricks
-=======
 outputs/
->>>>>>> Stashed changes
