@@ -57,7 +57,7 @@ Este criterio se llama **valor de la información**: elegimos al cliente donde d
 | **Probabilidad de cumplir, P(caída ≤ 10%)** | De 2000 futuros simulados, en cuántos se respeta el límite | 95,7% = en 1914 de 2000 futuros la caída no pasa de 10% | Un solo año de historia es **un solo camino**; la probabilidad cubre muchos caminos posibles |
 | **CVaR 95% (pérdida en el peor 5%)** | El promedio de lo que pasa en los 100 peores futuros de 2000 | CVaR −11% = en los peores escenarios la caída promedio es de 11% | Responde "¿y si sale mal?", que es lo que pregunta un cliente conservador |
 | **Rentabilidad (retorno)** | Cuánto ganó o perdió la cartera en un periodo | +1,3% en el año = S/ 13 000 por cada millón | **Es lo que el cliente quiere ver**, pero el retorno pasado **no predice** el futuro (correlación ≈ 0). Lo reportamos, pero no decidimos con él |
-| **Pérdida evitada (S/)** | La diferencia entre nuestra propuesta y el consejo ingenuo en el caso típico y en el malo | S/ 137 725 típica y S/ 229 404 en un escenario malo | Traduce el riesgo a dinero |
+| **Pérdida evitada (S/)** | La diferencia entre nuestra propuesta y el consejo ingenuo en el caso típico y en el malo | A 36 meses: S/ 224 407 típica y S/ 356 020 en el 10% de peores casos (caída máxima de la equiponderada − caída de la propuesta, mismo escenario) | Traduce el riesgo a dinero |
 | ❌ **Sharpe, betas, "acción ganadora"** | Retorno por unidad de riesgo y sensibilidad a tasas o FX | — | **No los usamos para decidir.** Con un año de datos no son estables ni significativos, y una recomendación basada en ellos sería suerte |
 
 ---

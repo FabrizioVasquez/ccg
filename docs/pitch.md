@@ -86,7 +86,9 @@ Dejar todas las pestañas abiertas y ya ejecutadas antes de presentar: no correr
 
 - [ ] Cada bloque del dashboard tiene como título su pregunta del brief.
 - [ ] Las cifras del dashboard coinciden con las de este guion (versión 20% / 36 meses).
-- [ ] **Fabrizio confirma la pérdida evitada en S/ de la versión vigente.** `sustentacion.md` usa S/ 137 725 (mediana) y S/ 229 404 (p90), pero en `etapa3_propuesta.md` §4 esas cifras vienen de la tabla a 1 año, no de la simulación a 36 meses. Hasta confirmarla, no decirla en el guion.
+- [x] **Pérdida evitada confirmada a 36 meses:** caída evitada mediana S/ 224 407 y p90 S/ 356 020 por S/ 1 M (`src/analysis/pitch_graficos.py`). Reemplaza S/ 137 725 / S/ 229 404, que venían de la tabla a 1 año.
+- [x] Resultado de la LSTM en `sustentacion.md` (Anexo A): H2 rechazada.
+- [ ] Presentación: `docs/pitch_value_finders_cl02.pptx` (regenerar con `src/analysis/pitch_deck.py`).
 - [ ] Una sola definición de "alta volatilidad" en todo el pitch: más de 30% anual.
 - [ ] Ensayar con cronómetro: 5:00 exactos, con traspasos.
 - [ ] Pestañas abiertas y ejecutadas.

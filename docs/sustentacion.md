@@ -15,7 +15,7 @@
 |---|---|
 | Probabilidad de cumplir el límite de 10% a 36 meses (propuesta) | **95,7%** (equiponderada: 0,1%) |
 | Peor caída en el 5% de escenarios más malos | −9,8% (CVaR 95%: −11,0%) |
-| Pérdida evitada frente a la equiponderada (por S/ 1 000 000) | Mediana **S/ 137 725**; escenario adverso (p90) **S/ 229 404** |
+| Caída evitada frente a la equiponderada a 36 meses (por S/ 1 000 000) | Mediana **S/ 224 407**; 10% de peores casos (p90) **S/ 356 020** (`src/analysis/pitch_graficos.py`) |
 | Validación sin mirar el futuro (walk-forward, 7 cortes) | **7 de 7** cumplen (equiponderada al 100%: 0 de 7) |
 | Datos aprovechables tras la limpieza | **99,99%** (541 319 de 541 363 registros) |
 
@@ -23,14 +23,14 @@
 
 ## 1. Generar valor a partir de la data
 
-**Respuesta corta:** convertimos un dataset sucio en una decisión con un valor medible en soles: le evitamos al cliente una pérdida mediana de S/ 137 725 por cada millón.
+**Respuesta corta:** convertimos un dataset sucio en una decisión con un valor medible en soles: le evitamos al cliente una caída mediana de S/ 224 407 por cada millón en 36 meses.
 
 | Paso | De qué a qué | Evidencia |
 |---|---|---|
 | Confianza | 541 363 registros crudos con alias, fechas mixtas, `N/A`, un precio ×100 y duplicados → 99,99% aprovechable, con cada corrección registrada | `notebooks/EDA.ipynb` ✅, `silver.dq_log` ✅ |
 | Señal | "¿Qué acción gana?" no tiene respuesta estable (el retorno no persiste, ρ ≈ 0). La volatilidad sí persiste (ρ 0,93–0,98) | `etapa3_propuesta.md` §2 ✅ |
 | Decisión | La palanca es la **exposición**: 20% en el núcleo, 30% de reserva para el retiro y 50% de liquidez | `gold.etapa3_recomendacion_simulador` ✅ |
-| Valor | P(cumplir) 95,7% frente a 0,1%; pérdida evitada mediana S/ 137 725 | Simulador Monte Carlo ✅ |
+| Valor | P(cumplir) 95,7% frente a 0,1%; caída evitada mediana S/ 224 407 a 36 meses | Simulador Monte Carlo ✅ |
 
 ---
 

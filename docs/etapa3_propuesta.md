@@ -66,7 +66,7 @@ Además, 2 de los 3 shocks del twist apuntan a CL_02 (el retiro del 30% y el COP
 | Drawdown mediano | −3,6% | −17,6% | −5,2% |
 | Retorno mediano a 1 año | +1,7% | −2,8% | — |
 
-**Pérdida evitada frente a la equiponderada:** mediana de **S/ 137 725** y, en el escenario adverso (p90), de **S/ 229 404** por cada S/ 1 000 000.
+**Pérdida evitada frente a la equiponderada (horizonte 1 año, reemplazada; a 36 meses: mediana S/ 224 407 y p90 S/ 356 020):** mediana de **S/ 137 725** y, en el escenario adverso (p90), de **S/ 229 404** por cada S/ 1 000 000.
 *Advertencia:* esta cifra se estima con los mismos datos con que se eligió X. La evidencia fuera de muestra es el walk-forward.
 
 ## 5. Twist

@@ -1,0 +1,38 @@
+# Job de punta a punta: medallón (bronze → silver → validación → gold) + analítica de CL_02 (etapas 2, 3 y 4).
+# Despliegue: databricks bundle deploy -t dev   ·   Ejecución: databricks bundle run ccg_pipeline_cl02 -t dev
+resources:
+  jobs:
+    ccg_pipeline_cl02:
+      name: ccg_pipeline_cl02
+      description: "Value Finders · CL_02: datos crudos → recomendación de inversión con evidencia (Monte Carlo + LSTM/MLflow)."
+      tags:
+        proyecto: value-finders
+        cliente: CL_02
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: bronze
+          notebook_task: {notebook_path: ../databricks/01_bronze.py}
+        - task_key: silver
+          depends_on: [{task_key: bronze}]
+          notebook_task: {notebook_path: ../databricks/02_silver.py}
+        - task_key: validacion
+          depends_on: [{task_key: silver}]
+          notebook_task: {notebook_path: ../databricks/04_validacion.py}
+        - task_key: gold
+          depends_on: [{task_key: validacion}]
+          notebook_task: {notebook_path: ../databricks/03_gold.py}
+        - task_key: reporte_calidad
+          depends_on: [{task_key: gold}]
+          notebook_task: {notebook_path: ../databricks/05_reporte_calidad.py}
+        - task_key: etapa2_senal
+          depends_on: [{task_key: gold}]
+          notebook_task: {notebook_path: ../notebooks/etapa2_find_the_signal.py}
+        - task_key: etapa3_propuesta
+          depends_on: [{task_key: etapa2_senal}]
+          notebook_task: {notebook_path: ../notebooks/etapa3_propuesta_cl02.py}
+        - task_key: etapa3_montecarlo
+          depends_on: [{task_key: etapa3_propuesta}]
+          notebook_task: {notebook_path: ../notebooks/etapa3_simulador_montecarlo_cl02.py}
+        - task_key: etapa4_lstm_mlflow
+          depends_on: [{task_key: etapa3_propuesta}]
+          notebook_task: {notebook_path: ../notebooks/etapa4_lstm_volatilidad_cl02.py}

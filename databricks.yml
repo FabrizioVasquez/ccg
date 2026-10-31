@@ -17,3 +17,6 @@ targets:
   # prod:
   #   workspace:
   #     host: https://dbc-7fa7e2ae-7434.cloud.databricks.com
+
+include:
+  - resources/*.yml
