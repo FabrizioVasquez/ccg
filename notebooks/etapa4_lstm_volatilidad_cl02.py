@@ -334,7 +334,9 @@ print(veredicto)
 
 if ON_DBX:
     for df_, name, cm in [(res, "etapa4_lstm_metricas", "Etapa 4: LSTM vs líneas base, pronóstico de vol 21d fuera de muestra (walk-forward)."),
-                          (P.assign(origen=P.origen.astype(str), fin_objetivo=P.fin_objetivo.astype(str)), "etapa4_lstm_predicciones",
+                          (P.assign(origen=P.origen.astype(str), fin_objetivo=P.fin_objetivo.astype(str))
+                            .rename(columns=lambda c: c.lower().replace(" ", "_").replace(".", "").replace("-", "_").replace("í", "i")),
+                           "etapa4_lstm_predicciones",
                            "Etapa 4: predicciones de vol 21d por activo y día (LSTM y líneas base)."),
                           (decision.assign(veredicto=veredicto), "etapa4_lstm_decision", "Etapa 4: impacto de la LSTM en la decisión de CL_02 y veredicto de H2.")]:
         spark.createDataFrame(df_).write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"credicorp_dq.gold.{name}")  # noqa: F821
