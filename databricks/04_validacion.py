@@ -47,7 +47,7 @@ def value(table, col, where):
 # COMMAND ----------
 
 EXPECTED_BRONZE = {"market_prices_raw": 2175, "market_prices_intraday_raw": 538836, "macro_raw": 271,
-                   "fundamentals_raw": 65, "asset_reference": 8, "client_profiles": 3, "events": 5}
+                   "fundamentals_raw": 65, "asset_reference": 8, "client_profiles": 3, "events": 5, "scenario_twist": 3}
 
 for table, fname in SOURCES.items():
     t = f"{BRONZE}.{table}"
@@ -94,9 +94,19 @@ check("silver", "filas con correcciones registradas en _dq_fixes",
 
 check("silver", "intradía: filas", lambda: count(intra), 538800, requires=[intra])
 check("silver", "intradía: cuarentena (close nulo)", lambda: count(S("market_prices_intraday_quarantine")), 24, requires=[intra])
+check("silver", "intradía: sin volumen centinela 99999999", lambda: count(intra, "volume = 99999999"), 0, requires=[intra])
+check("silver", "intradía: centinelas registrados en _dq_fixes",
+      lambda: count(intra, "array_contains(_dq_fixes, 'Volumen centinela → nulo')"), 8, requires=[intra])
+check("silver", "intradía: cubre hasta 2026-08-14 (no se filtran 2023+)",
+      lambda: str(spark.table(intra).agg(F.max("date")).first()[0]) == "2026-08-14", True, requires=[intra])
 
 check("silver", "macro: filas (una por fecha)", lambda: count(macro_t), 271, requires=[macro_t])
 check("silver", "macro: inflación ffill sin nulos", lambda: count(macro_t, "us_inflation_yoy_ffill IS NULL"), 0, requires=[macro_t])
+check("silver", "macro: inflación as-of nula solo antes de la 1.ª publicación", lambda: count(macro_t, "us_inflation_yoy_asof IS NULL"), 31, requires=[macro_t])
+check("silver", "caso: inflación de 2025-08 visible desde 2025-09-15 (3.00)",
+      lambda: value(macro_t, "us_inflation_yoy_asof", "date = '2025-09-15'"), 3.0, tol=1e-9, requires=[macro_t])
+check("silver", "caso: 2025-12-01 ve el dato publicado en nov (2.96), no el del propio mes",
+      lambda: value(macro_t, "us_inflation_yoy_asof", "date = '2025-12-01'"), 2.96, tol=1e-9, requires=[macro_t])
 check("silver", "macro: todas las fechas de mercado tienen macro",
       lambda: spark.table(daily).select("date").distinct().join(spark.table(macro_t), "date", "left_anti").count(), 0,
       requires=[daily, macro_t])
@@ -109,6 +119,25 @@ check("silver", "caso: 'Q4-2024' de ISS_02 → 2025-06-30 imputado",
       lambda: count(fund, "issuer_id = 'ISS_02' AND period_end = '2025-06-30' AND imputed_period"), 1, requires=[fund])
 check("silver", "caso: revenue '1,845.7' → 1845.7 (ISS_06 2025-06-30)",
       lambda: value(fund, "revenue_usd_m", "issuer_id = 'ISS_06' AND period_end = '2025-06-30'"), 1845.7, tol=1e-6, requires=[fund])
+check("silver", "caso: revenue ISS_06 2025-06-30 marcado suspect_revenue (único)",
+      lambda: count(fund, "suspect_revenue") == count(fund, "suspect_revenue AND issuer_id = 'ISS_06' AND period_end = '2025-06-30'") == 1,
+      True, requires=[fund])
+check("silver", "caso: cash ISS_07 2025-09-30 interpolado ≈ 335.6",
+      lambda: value(fund, "cash_usd_m", "issuer_id = 'ISS_07' AND period_end = '2025-09-30' AND imputed_cash"), 335.6, tol=1e-6, requires=[fund])
+check("silver", "fundamentales: cash nulo", lambda: count(fund, "cash_usd_m IS NULL"), 0, requires=[fund])
+check("silver", "fundamentales: available_date = period_end + 45", lambda: count(fund, "datediff(available_date, period_end) != 45"), 0, requires=[fund])
+
+clients_t, twist_t = S("client_profiles"), S("scenario_twist")
+check("silver", "clientes: rango ordinal Media-Baja < Media < Alta",
+      lambda: [r.client_id for r in spark.table(clients_t).orderBy("risk_tolerance_rank").collect()] == ["CL_02", "CL_03", "CL_01"],
+      True, requires=[clients_t])
+check("silver", "clientes: restricciones parseadas (45% sector, 25% alta vol, 3 países / 3 sectores)",
+      lambda: sorted((r.client_id, r.max_weight_per_sector, r.max_weight_high_vol, r.min_countries, r.min_sectors)
+                     for r in spark.table(clients_t).collect())
+              == [("CL_01", 0.45, None, None, None), ("CL_02", None, 0.25, None, None), ("CL_03", None, None, 3, 3)],
+      True, requires=[clients_t])
+check("silver", "twist: 3 choques mapeados, 0 en cuarentena",
+      lambda: (count(twist_t), count(S("scenario_twist_quarantine"))) == (3, 0), True, requires=[twist_t])
 check("silver", "dq_log tiene registros", lambda: count(S("dq_log")) > 0, True, requires=[S("dq_log")])
 
 # COMMAND ----------
@@ -122,17 +151,31 @@ G = lambda name: f"{GOLD}.{name}"
 check("gold", "fact_prices_daily: filas = silver diario", lambda: count(G("fact_prices_daily")) - count(daily), 0, requires=[G("fact_prices_daily"), daily])
 check("gold", "fact_prices_daily: retorno extremo (>50%)", lambda: count(G("fact_prices_daily"), "abs(ret) > 0.5"), 0, requires=[G("fact_prices_daily")])
 check("gold", "asset_risk_metrics: 8 activos", lambda: count(G("asset_risk_metrics")), 8, requires=[G("asset_risk_metrics")])
-check("gold", "caso: vol anual VF_A02 ≈ 45.15%",
-      lambda: value(G("asset_risk_metrics"), "vol_anual", "asset_id = 'VF_A02'"), 0.4515, tol=0.001, requires=[G("asset_risk_metrics")])
+check("gold", "caso: vol anual VF_A02 ≈ 46.03% (anualizada con ~261.9 sesiones observadas/año)",
+      lambda: value(G("asset_risk_metrics"), "vol_anual", "asset_id = 'VF_A02'"), 0.4603, tol=0.001, requires=[G("asset_risk_metrics")])
+check("gold", "asset_risk_metrics: la mitad del universo es alta volatilidad",
+      lambda: count(G("asset_risk_metrics"), "alta_volatilidad"), 4, requires=[G("asset_risk_metrics")])
 check("gold", "caso: max drawdown VF_A02 ≈ -55.41%",
       lambda: value(G("asset_risk_metrics"), "max_drawdown", "asset_id = 'VF_A02'"), -0.5541, tol=0.001, requires=[G("asset_risk_metrics")])
 check("gold", "fundamentals_ratios: filas", lambda: count(G("fundamentals_ratios")), 64, requires=[G("fundamentals_ratios")])
+check("gold", "caso: sin margen para el revenue sospechoso de ISS_06",
+      lambda: count(G("fundamentals_ratios"), "suspect_revenue AND ebitda_margin IS NULL AND net_margin IS NULL"), 1, requires=[G("fundamentals_ratios")])
+check("gold", "fundamentals_ratios: ninguna variación QoQ > 30% tras excluir el sospechoso",
+      lambda: count(G("fundamentals_ratios"), "abs(revenue_qoq) > 0.3"), 0, requires=[G("fundamentals_ratios")])
+sc = G("scenario_twist_impact")
+check("gold", "caso: escenario tasa 10y 4.10 → 4.75",
+      lambda: value(sc, "shocked_value", "target_column = 'us_10y_yield'"), 4.75, tol=1e-9, requires=[sc])
+check("gold", "caso: escenario USD/COP 4195.52 × 1.08",
+      lambda: value(sc, "shocked_value", "target_column = 'usd_cop'"), 4195.52 * 1.08, tol=1e-6, requires=[sc])
+check("gold", "caso: escenario CL_02 30% líquido en 6 meses",
+      lambda: spark.table(sc).filter("client_id = 'CL_02'").select("shocked_value", "horizon_months").first()[:] == (0.3, 6),
+      True, requires=[sc])
 check("gold", "event_impact: 5 eventos", lambda: spark.table(G("event_impact")).select("event_id").distinct().count(), 5, requires=[G("event_impact")])
 check("gold", "client_asset_fit: 3 clientes × 8 activos", lambda: count(G("client_asset_fit")), 24, requires=[G("client_asset_fit")])
 check("gold", "caso: CL_01 cumple con VF_A04 y VF_A05",
       lambda: sorted(r.asset_id for r in spark.table(G("client_asset_fit")).filter("client_id = 'CL_01' AND cumple_drawdown").collect()) == ["VF_A04", "VF_A05"],
       True, requires=[G("client_asset_fit")])
-check("gold", "dq_scorecard: 7 tablas", lambda: count(G("dq_scorecard")), 7, requires=[G("dq_scorecard")])
+check("gold", "dq_scorecard: 8 tablas", lambda: count(G("dq_scorecard")), 8, requires=[G("dq_scorecard")])
 
 # COMMAND ----------
 
