@@ -74,7 +74,7 @@ Aunque terminó ganando, en algún momento vio caer su dinero 13,6%. Si su toler
 | **EBITDA** | Ganancia operativa antes de intereses, impuestos y depreciación. Mide “cuánto genera el negocio en sí” |
 | **Margen EBITDA** | EBITDA ÷ Revenue. De cada 100 que vende, cuánto le queda operativamente |
 | **Utilidad neta** | Lo que queda al final, después de todo |
-| **Deuda neta / EBITDA** | (Deuda − Caja) ÷ EBITDA. Cuántos años de ganancia operativa necesita la empresa para pagar su deuda. Bajo = sana (<1,5x); alto = endeudada (>2,5x). Negativo = tiene más caja que deuda |
+| **Deuda neta / EBITDA** | (Deuda − Caja) ÷ EBITDA. Cuántos años de ganancia operativa necesita la empresa para pagar su deuda. Se calcula con el EBITDA de los **últimos 12 meses (LTM)**, no con el de un trimestre: si se usa uno solo, el ratio se infla ~4 veces. Bajo = sana (<1,5x); alto = endeudada (>2,5x). Negativo = tiene más caja que deuda. Nuestras 8 empresas están todas por debajo de 0,7x |
 
 ### 2.6 Datos y método
 | Término | Qué significa |
@@ -110,6 +110,7 @@ Antes de analizar, revisamos los datos. Encontramos problemas típicos de la vid
 - **El hallazgo más importante: dos fuentes de precios que se contradicen.** El archivo diario y el intradía (cada 10 minutos) arrancan en el mismo precio y después cuentan historias distintas.
   - **¿Cómo decidimos cuál creer?** Usamos los eventos como “prueba de verdad”. Si hubo una caída del proveedor de nube de VF_A02, el precio debería bajar.
   - El diario **acierta la dirección en 4 de 5 eventos** y el intradía solo en 2. Nos quedamos con el diario.
+  - Matiz honesto: acertar la *dirección* no es lo mismo que una reacción *estadísticamente significativa*. Solo la caída de A02 (−17,9%) supera claramente el ruido normal.
 
 > 💡 **Lección:** un modelo sofisticado sobre datos sucios produce conclusiones falsas con mucha seguridad. Limpiar no es un trámite: es parte del valor.
 
@@ -159,7 +160,7 @@ No las elegimos solo por precio, porque eso sería sesgo retrospectivo. Las resp
 | VF_A04 Lima Financial (Perú) | Buen retorno y caída moderada | Ventas +10%, deuda estable |
 | VF_A01 Andes Consumer (Colombia) | Volatilidad baja; subió en el Stress | Margen de 33%, el más alto |
 
-Las demás (VF_A02, A03, A06, A07) son “alta volatilidad”: la regla de CL_02 permite máximo 25% en ellas. VF_A02 cayó 24,5% en el Stress de febrero y VF_A06 está muy endeudada.
+Las demás (VF_A02, A03, A06, A07) son “alta volatilidad”: la regla de CL_02 permite máximo 25% en ellas. VF_A02 cayó 24,5% en el Stress de febrero y VF_A06 es la más apalancada del grupo, aunque con poca deuda en términos absolutos (0,68x).
 
 ---
 

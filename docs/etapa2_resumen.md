@@ -5,7 +5,7 @@
 
 **Materializado en Databricks:** catálogo `credicorp_dq` (alcance temporal: **un solo dominio**). Lee de `credicorp_dq.silver.*` y escribe `credicorp_dq.gold.etapa2_*` con el notebook [`notebooks/etapa2_find_the_signal.py`](../notebooks/etapa2_find_the_signal.py). Réplica local: `src/analysis/etapa2_signal.py`. Fecha de “hoy” en los datos: **2026-08-14**.
 
-¿Nuevo en el tema? Lee primero la [guía para junior](etapa2_guia_junior.md).
+¿Nuevo en el tema? Lee primero la [guía para junior](etapa2_guia_junior.md). Las pruebas de robustez, el plan de limpieza e imputación y el impacto del twist están en el [reporte de ciencia de datos](etapa2_reporte_cientifico_datos.md).
 
 ---
 
@@ -13,7 +13,7 @@
 
 | Hallazgo | Impacto | Tratamiento |
 |---|---|---|
-| **El diario y el expanded no coinciden** en el periodo común. Parten del mismo precio el 01-ago-2025 y luego se separan (correlación de retornos ≈ 0; diferencia media de USD 7,9). | Dos versiones de la verdad | Se usa **el diario** como fuente. Reacciona en la dirección del evento en **4 de 5** eventos; el intradía, en 2 de 5 (cifra de Databricks). El expanded queda solo como historia previa a ago-2025. |
+| **El diario y el expanded no coinciden** en el periodo común. Parten del mismo precio el 01-ago-2025 y luego se separan (correlación de retornos ≈ 0; diferencia media de USD 7,9). | Dos versiones de la verdad | Se usa **el diario** como fuente. Reacciona en la dirección del evento en **4 de 5** eventos; el intradía, en 2 de 5 (cifra de Databricks). *Matiz del reporte de ciencia de datos: solo 1 de 5 (A02) es estadísticamente significativo; el criterio es de dirección, no de significancia.* El expanded queda solo como historia previa a ago-2025. |
 | Alias de IDs (`VF-A1`, `VFA03`, `VF_A6`, `VF-A6`, `VF-A4`, `ISS04`) | Activos partidos en varios IDs | Se homologan al ID canónico (política g-01) |
 | 2 fechas en formato `MM/DD/YYYY` y 7 filas duplicadas | Rompen la PK (asset_id, date) | Se pasan a ISO y se deduplican (g-02, g-04) |
 | `close = 3589` (VF_A06, 2026-03-23), fuera del rango [low, high] | Un retorno falso de +10.000% | Silver lo corrige como error de escala ×100 → 35,89 |
@@ -66,12 +66,14 @@ Solo el **9,6%** de las carteras que respetan la restricción de volatilidad se 
 ### Evidencia que respalda qué activos forman el núcleo defensivo
 | Activo | Por qué | Fundamentales (último trimestre vs. hace 1 año) |
 |---|---|---|
-| VF_A05 Aurora Health (EE. UU.) | Menor DD (−14,6%), +35% en el año, −2% en el episodio de Stress | Utilidad neta +50%; deuda neta/EBITDA baja de 1,5x a 1,2x |
-| VF_A08 Atlas Utilities (EE. UU.) | Menor volatilidad (16%) y correlación ~0 con VF_A01 | Caja neta positiva (deuda neta/EBITDA −1,0x) |
-| VF_A04 Lima Financial (Perú) | +24% en el año, DD −18,6% | Revenue +10%, apalancamiento estable (~1,2x) |
+| VF_A05 Aurora Health (EE. UU.) | Menor DD (−14,6%), +35% en el año, −2% en el episodio de Stress | Utilidad neta +50%; deuda neta/EBITDA LTM baja de 0,37x a 0,31x |
+| VF_A08 Atlas Utilities (EE. UU.) | Menor volatilidad (16%) y correlación ~0 con VF_A01 | Caja neta positiva (deuda neta/EBITDA LTM −0,24x) |
+| VF_A04 Lima Financial (Perú) | +24% en el año, DD −18,6% | Revenue +10%, apalancamiento estable (~0,3x LTM) |
 | VF_A01 Andes Consumer (Colombia) | Volatilidad 20%, +2,2% en el Stress | Margen EBITDA 33%, el más alto |
 
-Quedan **fuera** o limitados al 25% de alta volatilidad: VF_A02 (−24,5% en el Stress de feb-26 y un evento operacional High), VF_A07 (evento de demanda High, −22% en 3 meses), VF_A06 (deuda neta/EBITDA 2,5x) y VF_A03.
+Quedan **fuera** o limitados al 25% de alta volatilidad: VF_A02 (−24,5% en el Stress de feb-26 y un evento operacional High), VF_A07 (evento de demanda High, −22% en 3 meses), VF_A06 (el más apalancado del universo, aunque bajo en términos absolutos: 0,68x LTM) y VF_A03.
+
+> **Corrección (31-oct):** en la versión anterior de este documento, el apalancamiento se calculó con el EBITDA de un solo trimestre, lo que lo sobrestimaba unas 4 veces. Las cifras de arriba usan EBITDA LTM (últimos 12 meses), igual que `gold.fundamentals_ratios`. Detalle en el [reporte de ciencia de datos](etapa2_reporte_cientifico_datos.md).
 
 ---
 

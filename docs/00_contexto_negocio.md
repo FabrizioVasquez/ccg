@@ -43,6 +43,8 @@ Explorar → materializar → validar → defender → iterar. Cada ciclo deja a
 ## Decisiones tomadas
 - La arquitectura data mesh (2 dominios) se usa como base de confianza y se resume en 1 slide del pitch. El protagonista del pitch es la decisión para el cliente.
 - Los datos no se versionan (el repo es público). Se cargan a un Volume de Databricks.
+- **Moneda de reporte: sol peruano (PEN, S/)** (31-oct-2026, por recomendación recibida). Todos los montos del análisis, el dashboard y el pitch se expresan en S/. El riesgo (drawdown frente a la tolerancia) se sigue midiendo en la moneda base de cada cliente: CL_02 en COP, CL_03 en PEN y CL_01 en USD.
+- Alcance temporal: un solo dominio en Databricks, el catálogo `credicorp_dq`.
 
 ## Observaciones por validar (todavía no son hipótesis)
 - Todos los activos están en USD, pero CL_02 (COP) y CL_03 (PEN) miden su patrimonio en moneda local. El tipo de cambio podría consumir parte del drawdown tolerado.

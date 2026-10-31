@@ -218,7 +218,10 @@ for c in ["revenue_usd_m", "ebitda_usd_m", "net_income_usd_m", "debt_usd_m", "ca
 med = f.groupby("issuer_id").revenue_usd_m.transform("median")
 f["revenue_outlier"] = f.revenue_usd_m < 0.75 * med     # ISS_06 2025-06-30 = 1845.7 (typo probable)
 f["ebitda_margin"] = np.where(f.revenue_outlier, np.nan, f.ebitda_usd_m / f.revenue_usd_m)
-f["net_debt_ebitda"] = (f.debt_usd_m - f.cash_usd_m) / f.ebitda_usd_m
+# apalancamiento con EBITDA LTM (suma de 4 trimestres), igual que gold.fundamentals_ratios.
+# Con EBITDA de un solo trimestre el ratio se infla ~4x.
+f["ebitda_ltm"] = f.groupby("issuer_id").ebitda_usd_m.transform(lambda s: s.rolling(4).sum())
+f["net_debt_ebitda"] = (f.debt_usd_m - f.cash_usd_m) / f.ebitda_ltm
 g = f.groupby("issuer_id")
 fz = pd.DataFrame({
     "ni_yoy": g.net_income_usd_m.apply(lambda s: s.iloc[-1] / s.iloc[-5] - 1),
