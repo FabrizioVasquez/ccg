@@ -21,3 +21,4 @@ __pycache__/
 # Databricks bundle cache / salidas locales de notebooks
 .databricks
 outputs/
+~$*

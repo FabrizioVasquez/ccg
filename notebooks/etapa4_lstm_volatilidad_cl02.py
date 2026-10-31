@@ -447,6 +447,8 @@ try:
     import mlflow.pytorch
     from mlflow.models import infer_signature
     if ON_DBX:
+        mlflow.set_tracking_uri("databricks")
+        mlflow.set_registry_uri("databricks-uc")      # en serverless no se puede leer spark.mlflow.modelRegistryUri: se fija explícito
         user = spark.sql("SELECT current_user()").first()[0]  # noqa: F821
         mlflow.set_experiment(f"/Users/{user}/ccg_etapa4_lstm_vol_cl02")
     with mlflow.start_run(run_name="etapa4_lstm_vol_cl02") as parent:
@@ -489,15 +491,24 @@ try:
             out = final(torch.tensor(ex)).numpy()
         mlflow.log_metrics({"final_best_epoch": hf["best_epoch"], "final_loss_valid": hf["val_best"]})
         sig = infer_signature(ex, out)
-        try:
-            mlflow.set_registry_uri("databricks-uc" if ON_DBX else "")
-            mlflow.pytorch.log_model(final, "modelo_lstm_vol", signature=sig, input_example=ex,
-                                     registered_model_name="credicorp_dq.gold.lstm_vol_cl02" if ON_DBX else None,
-                                     pip_requirements=["torch==2.5.1", "numpy"])
-            print("✓ Modelo registrado: credicorp_dq.gold.lstm_vol_cl02")
-        except Exception as e:
-            mlflow.pytorch.log_model(final, "modelo_lstm_vol", signature=sig, pip_requirements=["torch==2.5.1", "numpy"])
-            print("Modelo guardado en el run (sin registro en UC):", e)
+        info = mlflow.pytorch.log_model(final, "modelo_lstm_vol", signature=sig, input_example=ex,
+                                        pip_requirements=["torch==2.5.1", "numpy"])
+        print("✓ Modelo guardado en el run:", info.model_uri)
+        if ON_DBX:   # registro en Unity Catalog (en Free Edition el almacenamiento de modelos UC está bloqueado → queda trazado en el run)
+            try:
+                mv = mlflow.register_model(info.model_uri, "credicorp_dq.gold.lstm_vol_cl02")
+                mlflow.set_tag("registro_uc", f"credicorp_dq.gold.lstm_vol_cl02 v{mv.version}")
+                print("✓ Modelo registrado en UC: credicorp_dq.gold.lstm_vol_cl02 v", mv.version)
+            except Exception as e:
+                try:   # no dejar versiones vacías en el catálogo
+                    cl = mlflow.MlflowClient()
+                    for v in cl.search_model_versions("name='credicorp_dq.gold.lstm_vol_cl02'"):
+                        cl.delete_model_version("credicorp_dq.gold.lstm_vol_cl02", v.version)
+                    cl.delete_registered_model("credicorp_dq.gold.lstm_vol_cl02")
+                except Exception:
+                    pass
+                mlflow.set_tag("registro_uc", "no disponible en este workspace: " + str(e)[:200])
+                print("Registro en UC no disponible (el modelo queda versionado en el run):", str(e)[:200])
         print("✓ MLflow run:", parent.info.run_id)
 except Exception as e:  # MLflow es opcional en local
     print("MLflow no disponible:", e)
