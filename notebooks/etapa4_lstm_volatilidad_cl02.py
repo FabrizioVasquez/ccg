@@ -22,7 +22,15 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install torch --index-url https://download.pytorch.org/whl/cpu --quiet
+# MAGIC %pip install "torch==2.5.1" "typing_extensions>=4.12" --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple --quiet
+
+# COMMAND ----------
+
+# reinicia Python para que tome las versiones recién instaladas (en local no aplica)
+try:
+    dbutils.library.restartPython()  # noqa: F821
+except NameError:
+    pass
 
 # COMMAND ----------
 
